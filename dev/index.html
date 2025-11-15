@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0" />
+    <title>Modo Voice Agent (TypeScript SDK)</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 40px;
+        max-width: 600px;
+        width: 100%;
+      }
+
+      h1 {
+        color: #333;
+        margin-bottom: 30px;
+        text-align: center;
+        font-size: 28px;
+      }
+
+      .status {
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        text-align: center;
+        font-weight: 500;
+      }
+
+      .status.disconnected {
+        background: #fee;
+        color: #c33;
+      }
+
+      .status.connecting {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .status.connected {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-bottom: 20px;
+      }
+
+      button {
+        padding: 15px 30px;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex: 1;
+      }
+
+      button:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      }
+
+      button:active:not(:disabled) {
+        transform: translateY(0);
+      }
+
+      .btn-connect {
+        background: #667eea;
+        color: white;
+      }
+
+      .btn-disconnect {
+        background: #dc3545;
+        color: white;
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .voice-indicator {
+        margin: 20px 0;
+        padding: 20px;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .voice-indicator label {
+        display: block;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 15px;
+        font-size: 16px;
+        text-align: center;
+      }
+
+      .db-display {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        padding: 20px;
+        background: white;
+        border-radius: 12px;
+        margin: 15px 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .db-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .db-label {
+        font-size: 12px;
+        color: #666;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .db-value {
+        font-size: 36px;
+        font-weight: bold;
+        font-family: "Courier New", monospace;
+        transition: color 0.2s ease;
+      }
+
+      .db-value.high {
+        color: #4caf50;
+      }
+
+      .db-value.medium {
+        color: #ffc107;
+      }
+
+      .db-value.low {
+        color: #666;
+      }
+
+      .db-value-small {
+        font-size: 24px;
+        font-weight: bold;
+        font-family: "Courier New", monospace;
+        color: #888;
+      }
+
+      .db-unit {
+        font-size: 14px;
+        color: #999;
+        font-weight: 500;
+      }
+
+      .status-box {
+        text-align: center;
+        padding: 15px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      #voiceStatus {
+        display: inline-block;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: bold;
+        font-size: 16px;
+        color: #666;
+        background: #f0f0f0;
+        transition: all 0.3s ease;
+      }
+
+      #voiceStatus.active {
+        color: white;
+        background: #4caf50;
+        animation: pulse 1s infinite;
+      }
+
+      #voiceStatus.paused {
+        color: white;
+        background: #ff9800;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
+
+      .settings {
+        margin: 20px 0;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        border: 1px solid #e0e0e0;
+      }
+
+      .settings h3 {
+        color: #333;
+        margin-bottom: 15px;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .settings label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 15px 0;
+        font-size: 14px;
+        color: #555;
+      }
+
+      .device-select {
+        flex: 1;
+        padding: 8px 12px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        background: white;
+        cursor: pointer;
+        transition: border-color 0.3s ease;
+      }
+
+      .device-select:hover {
+        border-color: #667eea;
+      }
+
+      .device-select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .device-select:disabled {
+        background: #f5f5f5;
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .connection-input {
+        padding: 12px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        width: 100%;
+      }
+
+      .connection-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .connection-input:disabled {
+        background: #f5f5f5;
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+
+      .input-label {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin: 15px 0;
+      }
+
+      .input-label-text {
+        font-weight: 600;
+        color: #555;
+        font-size: 14px;
+      }
+
+      .input-hint {
+        font-size: 12px;
+        color: #888;
+        margin-top: 4px;
+      }
+
+      .btn-refresh {
+        margin-top: 10px;
+        padding: 10px 20px;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .btn-refresh:hover {
+        background: #5568d3;
+        transform: translateY(-1px);
+      }
+
+      .btn-refresh:active {
+        transform: translateY(0);
+      }
+
+      .sdk-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+        margin-left: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎙️ Modo Voice Agent <span class="sdk-badge">TS SDK</span></h1>
+
+      <div
+        id="status"
+        class="status disconnected">
+        Disconnected
+      </div>
+
+      <div class="settings">
+        <h3>🔑 Connection Settings</h3>
+        <label class="input-label">
+          <span class="input-label-text">Chatbot UUID:</span>
+          <input
+            type="text"
+            id="chatbotUuid"
+            class="connection-input"
+            placeholder="e.g., 550e8400-e29b-41d4-a716-446655440000" />
+          <span class="input-hint">💡 Must be a valid UUID format (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)</span>
+        </label>
+        <label class="input-label">
+          <span class="input-label-text">User Unique ID:</span>
+          <input
+            type="text"
+            id="userUniqueId"
+            class="connection-input"
+            placeholder="e.g., user123, 09123456789, user@email.com" />
+          <span class="input-hint">💡 Your unique identifier (phone, email, or custom ID)</span>
+        </label>
+      </div>
+
+      <div class="button-group">
+        <button
+          id="connectBtn"
+          class="btn-connect">
+          Connect
+        </button>
+        <button
+          id="disconnectBtn"
+          class="btn-disconnect"
+          disabled>
+          Disconnect
+        </button>
+      </div>
+
+      <div class="voice-indicator">
+        <label>🎤 Voice Detection</label>
+        <div class="db-display">
+          <div class="db-item">
+            <span class="db-label">Voice Level:</span>
+            <span
+              id="dbValue"
+              class="db-value"
+              >-∞</span
+            >
+            <span class="db-unit">dB</span>
+          </div>
+          <div class="db-item">
+            <span class="db-label">Noise Floor:</span>
+            <span
+              id="noiseFloorValue"
+              class="db-value-small"
+              >-∞</span
+            >
+            <span class="db-unit">dB</span>
+          </div>
+        </div>
+        <div class="status-box">
+          <span id="voiceStatus">⏸ Silent</span>
+        </div>
+      </div>
+
+      <div class="settings">
+        <h3>🎤 Microphone</h3>
+        <label>
+          <span>Select Microphone:</span>
+          <select
+            id="micSelect"
+            class="device-select">
+            <option>Loading microphones...</option>
+          </select>
+        </label>
+        <button
+          id="refreshMicBtn"
+          class="btn-refresh">
+          🔄 Refresh
+        </button>
+      </div>
+    </div>
+
+    <script type="module">
+      import {ModoVoiceClient, EventType, LogLevel} from "./dist/esm/index.js";
+
+      let client = null;
+      let onHoldAudioElement = null;
+      let isOnHoldPlaying = false;
+
+      function startOnHoldAudio() {
+        console.log("🎵 Starting on-hold audio, isOnHoldPlaying:", isOnHoldPlaying);
+        if (isOnHoldPlaying && onHoldAudioElement) {
+          console.log("On-hold already playing, skipping");
+          return;
+        }
+
+        stopOnHoldAudio();
+
+        console.log("Creating new Audio element for on-hold");
+        const audioPath = "/data/audios/on_hold_audios/1.mp3";
+
+        onHoldAudioElement = document.createElement("audio");
+        onHoldAudioElement.src = audioPath;
+        onHoldAudioElement.loop = true;
+        onHoldAudioElement.volume = 1.0;
+        onHoldAudioElement.preload = "auto";
+
+        onHoldAudioElement.onplay = () => {
+          isOnHoldPlaying = true;
+          console.log("✅ On-hold audio started playing");
+        };
+
+        onHoldAudioElement.onpause = () => {
+          console.log("⏸ On-hold audio paused");
+          isOnHoldPlaying = false;
+        };
+
+        onHoldAudioElement.onended = () => {
+          console.log("⏹ On-hold audio ended");
+          isOnHoldPlaying = false;
+        };
+
+        onHoldAudioElement.onerror = e => {
+          console.error("❌ On-hold audio error:", e, onHoldAudioElement.error);
+          if (onHoldAudioElement.error) {
+            const errorCodes = {
+              1: "MEDIA_ERR_ABORTED",
+              2: "MEDIA_ERR_NETWORK",
+              3: "MEDIA_ERR_DECODE",
+              4: "MEDIA_ERR_SRC_NOT_SUPPORTED"
+            };
+            console.error(`Error code: ${onHoldAudioElement.error.code} (${errorCodes[onHoldAudioElement.error.code] || "UNKNOWN"})`);
+          }
+          isOnHoldPlaying = false;
+        };
+
+        console.log("Loading audio element...");
+        onHoldAudioElement.load();
+
+        console.log("Attempting to play on-hold audio...");
+        const playPromise = onHoldAudioElement.play();
+
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log("✅ On-hold audio play() promise resolved");
+              isOnHoldPlaying = true;
+            })
+            .catch(e => {
+              console.error("❌ Failed to play on-hold audio:", e);
+              console.error("Error details:", e.message, e.name);
+              isOnHoldPlaying = false;
+            });
+        }
+      }
+
+      function stopOnHoldAudio() {
+        console.log("⏹ stopOnHoldAudio called, isOnHoldPlaying:", isOnHoldPlaying);
+        if (onHoldAudioElement) {
+          try {
+            onHoldAudioElement.pause();
+            onHoldAudioElement.currentTime = 0;
+            onHoldAudioElement.src = "";
+            onHoldAudioElement = null;
+          } catch (e) {
+            console.warn("⚠️ Error stopping on-hold audio:", e);
+          }
+        }
+        isOnHoldPlaying = false;
+        console.log("✅ On-hold audio stopped");
+      }
+
+      function updateStatus(state, text) {
+        const statusElement = document.getElementById("status");
+        statusElement.textContent = text;
+        statusElement.className = `status ${state}`;
+      }
+
+      function updateVoiceLevel(rms, db, isActive, noiseFloor, isPaused) {
+        const dbValueElement = document.getElementById("dbValue");
+        const noiseFloorElement = document.getElementById("noiseFloorValue");
+        const voiceStatusElement = document.getElementById("voiceStatus");
+
+        dbValueElement.textContent = db === -Infinity ? "-∞" : db.toFixed(1);
+
+        dbValueElement.className = "db-value";
+        if (db > -20) {
+          dbValueElement.classList.add("high");
+        } else if (db > -40) {
+          dbValueElement.classList.add("medium");
+        } else {
+          dbValueElement.classList.add("low");
+        }
+
+        noiseFloorElement.textContent = noiseFloor === -Infinity ? "-∞" : (20 * Math.log10(noiseFloor)).toFixed(1);
+
+        voiceStatusElement.className = "";
+        if (isPaused) {
+          voiceStatusElement.textContent = "⏸ Paused (AI Speaking)";
+          voiceStatusElement.classList.add("paused");
+        } else if (isActive) {
+          voiceStatusElement.textContent = "🎤 Recording";
+          voiceStatusElement.classList.add("active");
+        } else {
+          voiceStatusElement.textContent = "⏸ Silent";
+        }
+      }
+
+      async function loadDevices() {
+        try {
+          // Get devices directly without SDK
+          const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const audioDevices = devices.filter(device => device.kind === "audioinput");
+
+          // Stop the stream
+          stream.getTracks().forEach(track => track.stop());
+
+          const select = document.getElementById("micSelect");
+          select.innerHTML = "";
+
+          if (audioDevices.length === 0) {
+            const option = document.createElement("option");
+            option.textContent = "No microphones found";
+            select.appendChild(option);
+          } else {
+            audioDevices.forEach(device => {
+              const option = document.createElement("option");
+              option.value = device.deviceId;
+              option.textContent = device.label || `Microphone ${device.deviceId.slice(0, 8)}...`;
+              select.appendChild(option);
+            });
+          }
+        } catch (error) {
+          console.error("Error loading devices:", error);
+          const select = document.getElementById("micSelect");
+          select.innerHTML = "<option>Error loading microphones</option>";
+        }
+      }
+
+      async function connect() {
+        const chatbotUuidInput = document.getElementById("chatbotUuid");
+        const userUniqueIdInput = document.getElementById("userUniqueId");
+        const micSelect = document.getElementById("micSelect");
+        const connectBtn = document.getElementById("connectBtn");
+        const disconnectBtn = document.getElementById("disconnectBtn");
+
+        const chatbotUuid = chatbotUuidInput.value.trim();
+        const userUniqueId = userUniqueIdInput.value.trim();
+
+        if (!chatbotUuid || !userUniqueId) {
+          alert("Please enter both Chatbot UUID and User Unique ID");
+          return;
+        }
+
+        try {
+          updateStatus("connecting", "Connecting...");
+
+          client = new ModoVoiceClient({
+            apiBase: "https://live.modochats.com",
+            chatbotUuid,
+            userUniqueId,
+            logging: {
+              level: LogLevel.DEBUG,
+              enableConsole: true,
+              enableEvents: true
+            },
+            audio: {
+              processorPath: "https://modochats.s3.ir-thr-at1.arvanstorage.ir/audio-processor.js"
+            }
+          });
+
+          client.on(EventType.CONNECTED, event => {
+            console.log("✅ Connected!", event);
+            updateStatus("connected", `Connected - Chatbot: ${event.chatbotUuid.slice(0, 8)}...`);
+            connectBtn.disabled = true;
+            disconnectBtn.disabled = false;
+            micSelect.disabled = true;
+            chatbotUuidInput.disabled = true;
+            userUniqueIdInput.disabled = true;
+          });
+
+          client.on(EventType.DISCONNECTED, event => {
+            console.log("❌ Disconnected", event);
+            updateStatus("disconnected", event.reason || "Disconnected");
+            connectBtn.disabled = false;
+            disconnectBtn.disabled = true;
+            micSelect.disabled = false;
+            chatbotUuidInput.disabled = false;
+            userUniqueIdInput.disabled = false;
+            stopOnHoldAudio();
+          });
+
+          client.on(EventType.CONNECTION_ERROR, event => {
+            console.error("Connection error:", event);
+            updateStatus("disconnected", `Error: ${event.message}`);
+            alert(`Connection failed: ${event.message}`);
+          });
+
+          client.on(EventType.VOICE_METRICS, event => {
+            updateVoiceLevel(event.rms, event.db, event.isActive, event.noiseFloor, event.isPaused);
+          });
+
+          client.on(EventType.VOICE_DETECTED, event => {
+            console.log("🎤 Voice detected:", event.rms.toFixed(4), event.db.toFixed(1));
+          });
+
+          client.on(EventType.VOICE_ENDED, event => {
+            console.log("⏹ Voice ended, duration:", event.duration);
+          });
+
+          client.on(EventType.AI_PLAYBACK_STARTED, () => {
+            console.log("🤖 AI started speaking");
+          });
+
+          client.on(EventType.AI_PLAYBACK_CHUNK, event => {
+            // Audio chunks are automatically handled by the SDK's AudioService
+            // This event is for monitoring/debugging
+            console.log("🔊 Received audio chunk:", event.size, "bytes");
+          });
+
+          client.on(EventType.AI_PLAYBACK_COMPLETED, event => {
+            console.log("✅ AI finished speaking, bytes:", event.totalBytes);
+          });
+
+          client.on(EventType.ON_HOLD_STARTED, () => {
+            console.log("⏳ On-hold started - Playing hold music");
+            startOnHoldAudio();
+          });
+
+          client.on(EventType.ON_HOLD_STOPPED, () => {
+            console.log("✅ On-hold stopped - Resuming conversation");
+            stopOnHoldAudio();
+          });
+
+          client.on(EventType.TRANSCRIPT_RECEIVED, event => {
+            console.log("📝 Transcript:", event.text);
+          });
+
+          client.on(EventType.AI_RESPONSE_RECEIVED, event => {
+            console.log("💬 AI Response:", event.text);
+          });
+
+          client.on(EventType.MICROPHONE_PAUSED, () => {
+            console.log("⏸ Microphone paused");
+          });
+
+          client.on(EventType.MICROPHONE_RESUMED, () => {
+            console.log("▶️ Microphone resumed");
+          });
+
+          client.on(EventType.ERROR, event => {
+            console.error("❌ Error:", event.message);
+          });
+
+          client.onAny(event => {
+            if (event.type !== EventType.VOICE_METRICS) {
+              console.log("📢 Event:", event.type, event);
+            }
+          });
+
+          const selectedDeviceId = micSelect.value !== "Loading microphones..." ? micSelect.value : undefined;
+
+          await client.connect(selectedDeviceId);
+        } catch (error) {
+          console.error("Connection failed:", error);
+          updateStatus("disconnected", "Connection Failed");
+          alert(`Failed to connect: ${error.message}`);
+        }
+      }
+
+      async function disconnect() {
+        if (!client) return;
+
+        try {
+          await client.disconnect();
+          client = null;
+        } catch (error) {
+          console.error("Disconnect error:", error);
+        }
+      }
+
+      document.getElementById("connectBtn").onclick = connect;
+      document.getElementById("disconnectBtn").onclick = disconnect;
+      document.getElementById("refreshMicBtn").onclick = loadDevices;
+
+      loadDevices();
+
+      window.addEventListener("beforeunload", () => {
+        if (client && client.isConnected()) {
+          client.disconnect();
+        }
+      });
+    </script>
+  </body>
+</html>
