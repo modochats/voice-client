@@ -10,6 +10,7 @@ export class AudioService {
   private audioState: AudioState;
   private voiceMetrics: VoiceMetrics;
   private config: AudioConfig;
+  private sendAudioToServer: ((data: ArrayBuffer) => void) | null = null;
 
   private audioContext: AudioContext | null = null;
   private mediaStream: MediaStream | null = null;
@@ -25,12 +26,12 @@ export class AudioService {
     this.config = config;
   }
 
+  setSendAudioCallback(callback: (data: ArrayBuffer) => void): void {
+    this.sendAudioToServer = callback;
+  }
+
   async initialize(deviceId?: string): Promise<void> {
     try {
-      console.log("🔧 Initializing AudioService...");
-      console.log(`   Processor Path: ${this.config.processorPath}`);
-      console.log(`   Voice Threshold: ${this.config.processor.voiceThreshold}`);
-      
       // Get the stream FIRST to determine actual sample rate
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -38,27 +39,15 @@ export class AudioService {
           ...this.config.constraints
         }
       });
-      console.log("✅ Microphone stream obtained");
 
       this.mediaStream = stream;
 
       // Create AudioContext WITHOUT specifying sample rate - let it use device's native rate
       // This ensures AudioContext sample rate matches the media stream
       this.audioContext = new AudioContext();
-      console.log(`   AudioContext created: ${this.audioContext.sampleRate}Hz`);
-
-      console.log("📦 Loading audio-processor.js...");
       await this.audioContext.audioWorklet.addModule(this.config.processorPath);
-      console.log("✅ Audio processor loaded successfully!");
 
       await this.setupAudioWorklet();
-
-      await this.eventEmitter.emit({
-        type: EventType.USER_RECORDING_STARTED,
-        timestamp: Date.now(),
-        deviceId: deviceId || "default",
-        deviceLabel: stream.getAudioTracks()[0]?.label || "Unknown"
-      });
 
       this.audioState.setRecordingState(RecordingState.RECORDING);
     } catch (error) {
@@ -77,19 +66,13 @@ export class AudioService {
       throw new Error("Audio context or media stream not initialized");
     }
 
-    console.log("🔌 Setting up audio worklet...");
     const source = this.audioContext.createMediaStreamSource(this.mediaStream);
     this.audioWorkletNode = new AudioWorkletNode(this.audioContext, "audio-processor", {
       processorOptions: this.config.processor
     });
-    console.log("✅ AudioWorkletNode created");
-    console.log("   Processor options:", this.config.processor);
-
     this.audioWorkletNode.port.onmessage = event => {
-      console.log("📨 Message from audio processor:", event.data instanceof ArrayBuffer ? `ArrayBuffer ${event.data.byteLength} bytes` : event.data.type);
       // Handle raw ArrayBuffer (audio data) or structured messages (metrics)
       if (event.data instanceof ArrayBuffer) {
-        console.log(`🎵 Raw audio buffer: ${event.data.byteLength} bytes`);
         this.handleAudioData(event.data);
       } else {
         this.handleWorkletMessage(event.data);
@@ -98,7 +81,6 @@ export class AudioService {
 
     source.connect(this.audioWorkletNode);
     this.audioWorkletNode.connect(this.audioContext.destination);
-    console.log("🔗 Audio nodes connected successfully");
   }
 
   private handleWorkletMessage(data: {
@@ -113,7 +95,6 @@ export class AudioService {
     switch (data.type) {
       case "audioData":
         if (data.audioData) {
-          console.log(`🎵 Audio data received from worklet: ${data.audioData.byteLength} bytes`);
           this.handleAudioData(data.audioData);
         }
         break;
@@ -131,51 +112,18 @@ export class AudioService {
           };
 
           this.voiceMetrics.update(metrics);
-
-          this.eventEmitter.emit({
-            type: EventType.VOICE_METRICS,
-            timestamp: Date.now(),
-            ...metrics
-          });
-
-          if (data.isActive && !this.voiceMetrics.isVoiceActive()) {
-            this.eventEmitter.emit({
-              type: EventType.VOICE_DETECTED,
-              timestamp: Date.now(),
-              rms: data.rms,
-              db: data.db
-            });
-          } else if (!data.isActive && this.voiceMetrics.isVoiceActive()) {
-            this.eventEmitter.emit({
-              type: EventType.VOICE_ENDED,
-              timestamp: Date.now(),
-              duration: this.voiceMetrics.getVoiceDuration()
-            });
-          }
         }
-        break;
-      
-      case "voice-ended":
-        console.log("🎬 Voice ended signal received from audio processor");
-        this.eventEmitter.emit({
-          type: EventType.VOICE_ENDED,
-          timestamp: Date.now(),
-          duration: this.voiceMetrics.getVoiceDuration()
-        });
         break;
     }
   }
 
   private handleAudioData(audioData: ArrayBuffer): void {
-    console.log(`📤 Sending audio data: ${audioData.byteLength} bytes`);
-    this.eventEmitter.emit({
-      type: EventType.USER_RECORDING_DATA,
-      timestamp: Date.now(),
-      data: audioData,
-      byteLength: audioData.byteLength
-    });
 
     this.audioState.addBytesSent(audioData.byteLength);
+
+    if (this.sendAudioToServer) {
+      this.sendAudioToServer(audioData);
+    }
   }
 
   async handleIncomingAudioChunk(chunk: ArrayBuffer): Promise<void> {
@@ -235,30 +183,12 @@ export class AudioService {
 
     audio.onerror = error => {
       URL.revokeObjectURL(url);
-      this.eventEmitter.emit({
-        type: EventType.AI_PLAYBACK_ERROR,
-        timestamp: Date.now(),
-        error: new Error("Audio playback error"),
-        message: "Failed to play audio segment"
-      });
     };
 
     try {
       await audio.play();
-
-      if (this.audioState.getPlaybackState() === AudioPlaybackState.PLAYING) {
-        await this.eventEmitter.emit({
-          type: EventType.AI_PLAYBACK_STARTED,
-          timestamp: Date.now()
-        });
-      }
     } catch (error) {
-      await this.eventEmitter.emit({
-        type: EventType.AI_PLAYBACK_ERROR,
-        timestamp: Date.now(),
-        error: error as Error,
-        message: "Failed to start audio playback"
-      });
+      console.error("Failed to start audio playback:", error);
     }
   }
 
@@ -285,26 +215,12 @@ export class AudioService {
 
   private async completePlayback(): Promise<void> {
     this.audioState.setPlaybackState(AudioPlaybackState.COMPLETED);
-
-    await this.eventEmitter.emit({
-      type: EventType.AI_PLAYBACK_COMPLETED,
-      timestamp: Date.now(),
-      totalBytes: this.audioState.getTotalBytesReceived(),
-      duration: 0
-    });
-
     await this.resumeMicrophone();
   }
 
   async pauseMicrophone(): Promise<void> {
     if (this.audioWorkletNode) {
       this.audioWorkletNode.port.postMessage({type: "pause"});
-
-      await this.eventEmitter.emit({
-        type: EventType.MICROPHONE_PAUSED,
-        timestamp: Date.now(),
-        internal: true // Prevent infinite loop
-      });
     }
   }
 
@@ -316,12 +232,6 @@ export class AudioService {
     this.micResumeTimeout = setTimeout(async () => {
       if (this.audioWorkletNode) {
         this.audioWorkletNode.port.postMessage({type: "resume"});
-
-        await this.eventEmitter.emit({
-          type: EventType.MICROPHONE_RESUMED,
-          timestamp: Date.now(),
-          internal: true // Prevent infinite loop
-        });
       }
       this.micResumeTimeout = null;
     }, this.config.resumeDelay);
@@ -384,12 +294,5 @@ export class AudioService {
 
     this.audioState.reset();
     this.voiceMetrics.reset();
-
-    await this.eventEmitter.emit({
-      type: EventType.USER_RECORDING_STOPPED,
-      timestamp: Date.now(),
-      duration: 0,
-      totalBytes: this.audioState.getTotalBytesSent()
-    });
   }
 }

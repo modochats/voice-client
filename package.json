@@ -24,7 +24,9 @@
     "build:watch": "node build.mjs --watch",
     "clean": "npx rimraf dist",
     "prepublishOnly": "npm run build",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "dev": "yarn build && yarn start",
+    "start" : "live-server --host=localhost --port=6996 --open=/dev/index.html"
   },
   "keywords": [
     "modo",
@@ -52,6 +54,7 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "esbuild": "^0.25.12",
+    "live-server": "^1.2.2",
     "rimraf": "^6.1.0",
     "typescript": "^5.0.0"
   },

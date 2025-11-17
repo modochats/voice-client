@@ -135,96 +135,29 @@ export class WebSocketService {
 
   private async handleTextMessage(message: IncomingMessage): Promise<void> {
     switch (message.type) {
-      case WebSocketMessageType.AUDIO_COMPLETE:
-        await this.eventEmitter.emit({
-          type: EventType.AI_PLAYBACK_COMPLETED,
-          timestamp: Date.now(),
-          totalBytes: this.connectionState.getMetrics().bytesReceived,
-          duration: 0
-        });
-        break;
+      case WebSocketMessageType.TURN:
+        const turnMsg = message as any;
+        if (turnMsg.message && "turn" in turnMsg.message) {
+          const turn = turnMsg.message.turn;
 
-      case WebSocketMessageType.PAUSE_INPUT:
-        await this.eventEmitter.emit({
-          type: EventType.MICROPHONE_PAUSED,
-          timestamp: Date.now()
-        });
-        break;
-
-      case WebSocketMessageType.RESUME_INPUT:
-        await this.eventEmitter.emit({
-          type: EventType.MICROPHONE_RESUMED,
-          timestamp: Date.now()
-        });
-        break;
-
-      case WebSocketMessageType.START_ON_HOLD:
-        await this.eventEmitter.emit({
-          type: EventType.MICROPHONE_PAUSED,
-          timestamp: Date.now()
-        });
-        await this.eventEmitter.emit({
-          type: EventType.ON_HOLD_STARTED,
-          timestamp: Date.now()
-        });
-        break;
-
-      case WebSocketMessageType.STOP_ON_HOLD:
-        await this.eventEmitter.emit({
-          type: EventType.MICROPHONE_RESUMED,
-          timestamp: Date.now()
-        });
-        await this.eventEmitter.emit({
-          type: EventType.ON_HOLD_STOPPED,
-          timestamp: Date.now()
-        });
-        break;
-
-      case WebSocketMessageType.CLEAR_BUFFER:
-        await this.eventEmitter.emit({
-          type: EventType.CLEAR_BUFFER,
-          timestamp: Date.now()
-        });
-        break;
-
-      case WebSocketMessageType.STATUS:
-        await this.eventEmitter.emit({
-          type: EventType.INFO,
-          timestamp: Date.now(),
-          message: (message as any).message || "Status update",
-          context: "WebSocket"
-        });
-        break;
-
-      case WebSocketMessageType.CLOSE:
-        const closeMessage = (message as any).message || "Server closing connection";
-        console.log("👋 Server sent goodbye:", closeMessage);
-
-        // Emit info about the goodbye message
-        await this.eventEmitter.emit({
-          type: EventType.INFO,
-          timestamp: Date.now(),
-          message: closeMessage,
-          context: "WebSocket"
-        });
-
-        // Disconnect gracefully after showing goodbye message
-        setTimeout(() => {
-          if (this.ws) {
-            // Mark as intentional to prevent reconnect
-            this.intentionalDisconnect = true;
-            this.ws.close(1000, closeMessage);
+          // Pause microphone when AI is speaking, resume when user's turn
+          if (turn === "ai") {
+            await this.eventEmitter.emit({
+              type: EventType.MICROPHONE_PAUSED,
+              timestamp: Date.now()
+            });
+          } else if (turn === "user") {
+            await this.eventEmitter.emit({
+              type: EventType.MICROPHONE_RESUMED,
+              timestamp: Date.now()
+            });
           }
-        }, 3000); // 3 seconds to read the message
-        break;
 
-      case WebSocketMessageType.TRANSCRIPT:
-        if (message.data && typeof message.data === "object" && "text" in message.data) {
+          // Emit the turn changed event
           await this.eventEmitter.emit({
-            type: EventType.TRANSCRIPT_RECEIVED,
+            type: EventType.TURN_CHANGED,
             timestamp: Date.now(),
-            text: (message.data as {text: string}).text,
-            language: (message.data as {language?: string}).language
+            turn: turn
           });
         }
         break;

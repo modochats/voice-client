@@ -439,7 +439,7 @@
     </div>
 
     <script type="module">
-      import {ModoVoiceClient, EventType, LogLevel} from "./dist/esm/index.js";
+      import {ModoVoiceClient, EventType, LogLevel} from "../dist/esm/index.js";
 
       let client = null;
       let onHoldAudioElement = null;
@@ -663,32 +663,22 @@
             console.log("🎤 Voice detected:", event.rms.toFixed(4), event.db.toFixed(1));
           });
 
-          client.on(EventType.VOICE_ENDED, event => {
-            console.log("⏹ Voice ended, duration:", event.duration);
+          client.on(EventType.TURN_CHANGED, event => {
+            console.log("🔄 Turn changed to:", event.turn);
           });
 
-          client.on(EventType.AI_PLAYBACK_STARTED, () => {
-            console.log("🤖 AI started speaking");
+          client.on(EventType.MICROPHONE_PAUSED, () => {
+            console.log("🔇 Microphone paused");
+          });
+
+          client.on(EventType.MICROPHONE_RESUMED, () => {
+            console.log("🔊 Microphone resumed");
           });
 
           client.on(EventType.AI_PLAYBACK_CHUNK, event => {
             // Audio chunks are automatically handled by the SDK's AudioService
             // This event is for monitoring/debugging
             console.log("🔊 Received audio chunk:", event.size, "bytes");
-          });
-
-          client.on(EventType.AI_PLAYBACK_COMPLETED, event => {
-            console.log("✅ AI finished speaking, bytes:", event.totalBytes);
-          });
-
-          client.on(EventType.ON_HOLD_STARTED, () => {
-            console.log("⏳ On-hold started - Playing hold music");
-            startOnHoldAudio();
-          });
-
-          client.on(EventType.ON_HOLD_STOPPED, () => {
-            console.log("✅ On-hold stopped - Resuming conversation");
-            stopOnHoldAudio();
           });
 
           client.on(EventType.TRANSCRIPT_RECEIVED, event => {

@@ -1,25 +1,15 @@
 export enum ConnectionState {
-  DISCONNECTED = 'disconnected',
-  CONNECTING = 'connecting',
-  CONNECTED = 'connected',
-  DISCONNECTING = 'disconnecting',
-  ERROR = 'error'
+  DISCONNECTED = "disconnected",
+  CONNECTING = "connecting",
+  CONNECTED = "connected",
+  DISCONNECTING = "disconnecting",
+  ERROR = "error"
 }
 
 export enum WebSocketMessageType {
-  AUDIO_CHUNK = 'audio_chunk',
-  AUDIO_COMPLETE = 'audio_complete',
-  PAUSE_INPUT = 'pause_input',
-  RESUME_INPUT = 'resume_input',
-  START_ON_HOLD = 'start_on_hold', // Server sends this
-  STOP_ON_HOLD = 'stop_on_hold',
-  CLEAR_BUFFER = 'clear_buffer',
-  CLOSE = 'close',
-  STATUS = 'status',
-  TRANSCRIPT = 'transcript',
-  ERROR = 'error',
-  PING = 'ping',
-  PONG = 'pong'
+  TURN = "TURN",
+  AUDIO_CHUNK = "audio_chunk",
+  ERROR = "error"
 }
 
 export interface WebSocketConfig {
@@ -39,59 +29,32 @@ export interface WebSocketMessage {
   timestamp?: number;
 }
 
+export interface TurnMessage extends WebSocketMessage {
+  type: WebSocketMessageType.TURN;
+  message?: {
+    turn: "ai" | "user";
+  };
+}
+
 export interface AudioChunkMessage extends WebSocketMessage {
   type: WebSocketMessageType.AUDIO_CHUNK;
   data: ArrayBuffer;
 }
 
-export interface AudioCompleteMessage extends WebSocketMessage {
-  type: WebSocketMessageType.AUDIO_COMPLETE;
-}
-
-export interface PauseInputMessage extends WebSocketMessage {
-  type: WebSocketMessageType.PAUSE_INPUT;
-}
-
-export interface ResumeInputMessage extends WebSocketMessage {
-  type: WebSocketMessageType.RESUME_INPUT;
-}
-
-export interface StartOnHoldMessage extends WebSocketMessage {
-  type: WebSocketMessageType.START_ON_HOLD;
-}
-
-export interface StopOnHoldMessage extends WebSocketMessage {
-  type: WebSocketMessageType.STOP_ON_HOLD;
-}
-
-export interface TranscriptMessage extends WebSocketMessage {
-  type: WebSocketMessageType.TRANSCRIPT;
-  data: {
-    text: string;
-    language?: string;
-    confidence?: number;
-  };
-}
-
 export interface ErrorMessage extends WebSocketMessage {
   type: WebSocketMessageType.ERROR;
-  data: {
-    code?: number;
-    message: string;
-    details?: unknown;
-  };
+  data?:
+    | {
+        code?: number;
+        message: string;
+        details?: unknown;
+      }
+    | {
+        message: string;
+      };
 }
 
-export type IncomingMessage =
-  | AudioChunkMessage
-  | AudioCompleteMessage
-  | PauseInputMessage
-  | ResumeInputMessage
-  | StartOnHoldMessage
-  | StopOnHoldMessage
-  | TranscriptMessage
-  | ErrorMessage
-  | WebSocketMessage;
+export type IncomingMessage = TurnMessage | AudioChunkMessage | ErrorMessage | WebSocketMessage;
 
 export interface ConnectionMetrics {
   connectedAt?: number;
@@ -110,4 +73,3 @@ export interface WebSocketError {
   timestamp: number;
   wasClean: boolean;
 }
-

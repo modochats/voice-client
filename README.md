@@ -2,9 +2,7 @@
 
 > TypeScript/JavaScript SDK for building real-time voice applications with Modo AI
 
-[![npm version](https://img.shields.io/npm/v/@modochats/voice-client.svg)](https://www.npmjs.com/package/@modochats/voice-client)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm version](https://img.shields.io/npm/v/@modochats/voice-client.svg)](https://www.npmjs.com/package/@modochats/voice-client) [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
 
@@ -38,28 +36,24 @@ pnpm add @modochats/voice-client
 ## Quick Start
 
 ```typescript
-import { ModoVoiceClient, EventType } from '@modochats/voice-client';
+import {ModoVoiceClient, EventType} from "@modochats/voice-client";
 
 const client = new ModoVoiceClient({
-  apiBase: 'https://live.modochats.com',
-  chatbotUuid: 'your-chatbot-uuid',
-  userUniqueId: 'user-123'
+  apiBase: "https://live.modochats.com",
+  chatbotUuid: "your-chatbot-uuid",
+  userUniqueId: "user-123"
 });
 
-client.on(EventType.CONNECTED, (event) => {
-  console.log('Connected!', event);
+client.on(EventType.CONNECTED, event => {
+  console.log("Connected!", event);
 });
 
-client.on(EventType.AI_PLAYBACK_STARTED, (event) => {
-  console.log('AI is speaking...');
+client.on(EventType.TURN_CHANGED, event => {
+  console.log("Turn:", event.turn); // 'ai' or 'user'
 });
 
-client.on(EventType.VOICE_DETECTED, (event) => {
-  console.log('User voice detected:', event.rms, event.db);
-});
-
-client.on(EventType.TRANSCRIPT_RECEIVED, (event) => {
-  console.log('User said:', event.text);
+client.on(EventType.AI_PLAYBACK_CHUNK, event => {
+  console.log("Receiving audio chunk:", event.size, "bytes");
 });
 
 await client.connect();
@@ -71,14 +65,14 @@ await client.connect();
 
 ```typescript
 const client = new ModoVoiceClient({
-  apiBase: 'https://live.modochats.com',
-  chatbotUuid: 'abc-123',
-  userUniqueId: 'user-456'
+  apiBase: "https://live.modochats.com",
+  chatbotUuid: "abc-123",
+  userUniqueId: "user-456"
 });
 
 await client.connect();
 
-console.log('Is connected:', client.isConnected());
+console.log("Is connected:", client.isConnected());
 
 await client.disconnect();
 ```
@@ -87,7 +81,7 @@ await client.disconnect();
 
 ```typescript
 const devices = await client.getAvailableDevices();
-console.log('Available microphones:', devices);
+console.log("Available microphones:", devices);
 
 await client.connect(devices[0].deviceId);
 ```
@@ -95,7 +89,7 @@ await client.connect(devices[0].deviceId);
 ### Listening to Events
 
 ```typescript
-const unsubscribe = client.on(EventType.VOICE_METRICS, (event) => {
+const unsubscribe = client.on(EventType.VOICE_METRICS, event => {
   console.log(`Voice Level: ${event.rms.toFixed(4)} RMS, ${event.db.toFixed(1)} dB`);
 });
 
@@ -105,16 +99,16 @@ unsubscribe();
 ### One-Time Events
 
 ```typescript
-client.once(EventType.AI_PLAYBACK_COMPLETED, (event) => {
-  console.log('AI finished speaking');
+client.once(EventType.MICROPHONE_PAUSED, event => {
+  console.log("Microphone paused while AI is speaking");
 });
 ```
 
 ### Listening to All Events
 
 ```typescript
-client.onAny((event) => {
-  console.log('Event:', event.type, event);
+client.onAny(event => {
+  console.log("Event:", event.type, event);
 });
 ```
 
@@ -124,10 +118,10 @@ client.onAny((event) => {
 
 ```typescript
 const client = new ModoVoiceClient({
-  apiBase: 'https://live.modochats.com',
-  chatbotUuid: 'your-chatbot-uuid',
-  userUniqueId: 'user-123',
-  
+  apiBase: "https://live.modochats.com",
+  chatbotUuid: "your-chatbot-uuid",
+  userUniqueId: "user-123",
+
   audio: {
     constraints: {
       sampleRate: 16000,
@@ -151,7 +145,7 @@ const client = new ModoVoiceClient({
     resumeDelay: 200,
     failsafeResumeTimeout: 10000
   },
-  
+
   websocket: {
     reconnect: true,
     maxReconnectAttempts: 5,
@@ -161,9 +155,9 @@ const client = new ModoVoiceClient({
     pingInterval: 30000,
     pongTimeout: 5000,
     connectionTimeout: 10000,
-    binaryType: 'arraybuffer'
+    binaryType: "arraybuffer"
   },
-  
+
   logging: {
     level: LogLevel.INFO,
     enableConsole: true,
@@ -171,7 +165,7 @@ const client = new ModoVoiceClient({
     includeTimestamp: true,
     includeContext: true
   },
-  
+
   features: {
     enableVAD: true,
     enableNoiseReduction: true,
@@ -190,103 +184,125 @@ const client = new ModoVoiceClient({
 
 #### Audio Configuration
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `constraints.sampleRate` | number | 16000 | Audio sample rate in Hz |
-| `constraints.channelCount` | number | 1 | Number of audio channels |
-| `constraints.echoCancellation` | boolean | true | Enable echo cancellation |
-| `constraints.noiseSuppression` | boolean | true | Enable noise suppression |
-| `constraints.autoGainControl` | boolean | true | Enable automatic gain control |
-| `processor.voiceThreshold` | number | 0.25 | Voice detection threshold (0-1) |
-| `processor.silenceThreshold` | number | 0.15 | Silence detection threshold (0-1) |
-| `minBufferSize` | number | 40000 | Minimum buffer size before playback (bytes) |
-| `targetChunks` | number | 20 | Target number of chunks to buffer |
+| Option                         | Type    | Default | Description                                 |
+| ------------------------------ | ------- | ------- | ------------------------------------------- |
+| `constraints.sampleRate`       | number  | 16000   | Audio sample rate in Hz                     |
+| `constraints.channelCount`     | number  | 1       | Number of audio channels                    |
+| `constraints.echoCancellation` | boolean | true    | Enable echo cancellation                    |
+| `constraints.noiseSuppression` | boolean | true    | Enable noise suppression                    |
+| `constraints.autoGainControl`  | boolean | true    | Enable automatic gain control               |
+| `processor.voiceThreshold`     | number  | 0.25    | Voice detection threshold (0-1)             |
+| `processor.silenceThreshold`   | number  | 0.15    | Silence detection threshold (0-1)           |
+| `minBufferSize`                | number  | 40000   | Minimum buffer size before playback (bytes) |
+| `targetChunks`                 | number  | 20      | Target number of chunks to buffer           |
 
 #### WebSocket Configuration
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `reconnect` | boolean | true | Enable automatic reconnection |
-| `maxReconnectAttempts` | number | 5 | Maximum reconnection attempts |
-| `reconnectDelay` | number | 1000 | Initial reconnect delay (ms) |
-| `reconnectBackoffMultiplier` | number | 1.5 | Backoff multiplier for reconnects |
-| `pingInterval` | number | 30000 | WebSocket ping interval (ms) |
-| `connectionTimeout` | number | 10000 | Connection timeout (ms) |
+| Option                       | Type    | Default | Description                       |
+| ---------------------------- | ------- | ------- | --------------------------------- |
+| `reconnect`                  | boolean | true    | Enable automatic reconnection     |
+| `maxReconnectAttempts`       | number  | 5       | Maximum reconnection attempts     |
+| `reconnectDelay`             | number  | 1000    | Initial reconnect delay (ms)      |
+| `reconnectBackoffMultiplier` | number  | 1.5     | Backoff multiplier for reconnects |
+| `pingInterval`               | number  | 30000   | WebSocket ping interval (ms)      |
+| `connectionTimeout`          | number  | 10000   | Connection timeout (ms)           |
 
 #### Logging Configuration
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `level` | LogLevel | INFO | Logging level (NONE, ERROR, WARN, INFO, DEBUG) |
-| `enableConsole` | boolean | true | Enable console logging |
-| `enableEvents` | boolean | true | Emit log events |
-| `includeTimestamp` | boolean | true | Include timestamps in logs |
-| `includeContext` | boolean | true | Include context in logs |
+| Option             | Type     | Default | Description                                    |
+| ------------------ | -------- | ------- | ---------------------------------------------- |
+| `level`            | LogLevel | INFO    | Logging level (NONE, ERROR, WARN, INFO, DEBUG) |
+| `enableConsole`    | boolean  | true    | Enable console logging                         |
+| `enableEvents`     | boolean  | true    | Emit log events                                |
+| `includeTimestamp` | boolean  | true    | Include timestamps in logs                     |
+| `includeContext`   | boolean  | true    | Include context in logs                        |
 
 ## Events
 
 ### Connection Events
 
 ```typescript
-EventType.CONNECTED
-EventType.DISCONNECTED
-EventType.CONNECTION_ERROR
+EventType.CONNECTED;
+EventType.DISCONNECTED;
+EventType.CONNECTION_ERROR;
 ```
 
 ### AI Playback Events
 
-```typescript
-EventType.AI_PLAYBACK_STARTED
-EventType.AI_PLAYBACK_CHUNK
-EventType.AI_PLAYBACK_COMPLETED
-EventType.AI_PLAYBACK_ERROR
-```
+````
 
-### Recording Events
+### Audio Events
 
 ```typescript
-EventType.USER_RECORDING_STARTED
-EventType.USER_RECORDING_STOPPED
-EventType.USER_RECORDING_DATA
-```
+EventType.AI_PLAYBACK_CHUNK      // Incoming audio chunk from server
+EventType.TURN_CHANGED            // Indicates whose turn to speak (ai | user)
+EventType.MICROPHONE_PAUSED       // Microphone paused (when AI is speaking)
+EventType.MICROPHONE_RESUMED      // Microphone resumed (when it's user's turn)
+````
 
-### Voice Detection Events
-
-```typescript
-EventType.VOICE_DETECTED
-EventType.VOICE_ENDED
-EventType.VOICE_METRICS
-```
-
-### Microphone Events
+### Connection Events
 
 ```typescript
-EventType.MICROPHONE_PAUSED
-EventType.MICROPHONE_RESUMED
-```
-
-### Message Events
-
-```typescript
-EventType.TRANSCRIPT_RECEIVED
-EventType.AI_RESPONSE_RECEIVED
-```
-
-### On-Hold Events
-
-```typescript
-EventType.ON_HOLD_STARTED
-EventType.ON_HOLD_STOPPED
+EventType.CONNECTED; // Successfully connected to server
+EventType.DISCONNECTED; // Disconnected from server
+EventType.CONNECTION_ERROR; // Connection error occurred
 ```
 
 ### Log Events
 
 ```typescript
-EventType.ERROR
-EventType.WARNING
-EventType.INFO
-EventType.DEBUG
+EventType.ERROR;
+EventType.WARNING;
+EventType.INFO;
+EventType.DEBUG;
 ```
+
+## API Reference
+
+### ModoVoiceClient
+
+```
+
+### Recording Events
+
+```
+
+## API Reference
+
+### ModoVoiceClient
+
+````
+
+#### Methods
+
+- `connect(deviceId?: string): Promise<void>` - Connect to the server and initialize audio
+- `disconnect(): Promise<void>` - Disconnect from the server and cleanup audio
+- `on<T>(eventType: T, listener: EventListener): () => void` - Register event listener
+- `once<T>(eventType: T, listener: EventListener): () => void` - Register one-time event listener
+- `onAny(listener: EventListener): () => void` - Listen to all events
+- `isConnected(): boolean` - Check connection status
+- `getAvailableDevices(): Promise<AudioDeviceInfo[]>` - Get available audio devices
+- `getConnectionMetrics(): ConnectionMetrics` - Get connection statistics
+- `getVoiceMetrics()` - Get voice activity metrics
+- `setLogLevel(level: LogLevel): void` - Set logging level
+- `getConfig(): Required<ModoVoiceConfig>` - Get current configuration
+- `updateConfig(updates: Partial<ModoVoiceConfig>): void` - Update configuration
+
+#### Events
+
+##### Core Events
+- `CONNECTED` - Connected to server
+- `DISCONNECTED` - Disconnected from server
+- `CONNECTION_ERROR` - Connection error
+- `TURN_CHANGED` - Whose turn it is (ai | user)
+- `AI_PLAYBACK_CHUNK` - Incoming audio chunk
+- `MICROPHONE_PAUSED` - Microphone paused
+- `MICROPHONE_RESUMED` - Microphone resumed
+- `ERROR` - Error occurred
+- `INFO` - Information message
+- `DEBUG` - Debug message
+
+###
 
 ## API Reference
 
@@ -296,53 +312,68 @@ EventType.DEBUG
 
 ```typescript
 new ModoVoiceClient(config: ModoVoiceConfig)
-```
+````
 
 #### Methods
 
 ##### connect(deviceId?: string): Promise<void>
+
 Connect to the Modo Voice service with optional device ID.
 
 ##### disconnect(): Promise<void>
+
 Disconnect from the service and cleanup resources.
 
 ##### on<T>(eventType: T, listener: EventListener): () => void
+
 Subscribe to an event. Returns unsubscribe function.
 
 ##### once<T>(eventType: T, listener: EventListener): () => void
+
 Subscribe to an event once. Returns unsubscribe function.
 
 ##### off<T>(eventType: T, listener: EventListener): void
+
 Unsubscribe from an event.
 
 ##### onAny(listener: EventListener): () => void
+
 Subscribe to all events.
 
 ##### offAny(listener: EventListener): void
+
 Unsubscribe from all events.
 
 ##### isConnected(): boolean
+
 Check if currently connected.
 
 ##### isInitialized(): boolean
+
 Check if audio system is initialized.
 
 ##### getConnectionMetrics(): ConnectionMetrics
+
 Get connection statistics.
 
 ##### getVoiceMetrics(): VoiceActivityMetrics
+
 Get current voice activity metrics.
 
 ##### getAvailableDevices(): Promise<AudioDeviceInfo[]>
+
 Get list of available audio input devices.
 
 ##### setLogLevel(level: LogLevel): void
+
 Change logging level at runtime.
 
 ##### getConfig(): ModoVoiceConfig
+
 Get current configuration.
 
 ##### updateConfig(updates: Partial<ModoVoiceConfig>): void
+
 Update configuration (only when disconnected).
 
 ## Examples
@@ -350,28 +381,31 @@ Update configuration (only when disconnected).
 ### React Integration
 
 ```typescript
-import { useEffect, useState } from 'react';
-import { ModoVoiceClient, EventType } from '@modochats/voice-client';
+import {useEffect, useState} from "react";
+import {ModoVoiceClient, EventType} from "@modochats/voice-client";
 
 function VoiceChat() {
-  const [client] = useState(() => new ModoVoiceClient({
-    apiBase: 'https://live.modochats.com',
-    chatbotUuid: 'your-chatbot-uuid',
-    userUniqueId: 'user-123'
-  }));
-  
+  const [client] = useState(
+    () =>
+      new ModoVoiceClient({
+        apiBase: "https://live.modochats.com",
+        chatbotUuid: "your-chatbot-uuid",
+        userUniqueId: "user-123"
+      })
+  );
+
   const [isConnected, setIsConnected] = useState(false);
-  const [transcript, setTranscript] = useState('');
+  const [transcript, setTranscript] = useState("");
   const [voiceActive, setVoiceActive] = useState(false);
 
   useEffect(() => {
     client.on(EventType.CONNECTED, () => setIsConnected(true));
     client.on(EventType.DISCONNECTED, () => setIsConnected(false));
-    
-    client.on(EventType.TRANSCRIPT_RECEIVED, (event) => {
+
+    client.on(EventType.TRANSCRIPT_RECEIVED, event => {
       setTranscript(event.text);
     });
-    
+
     client.on(EventType.VOICE_DETECTED, () => setVoiceActive(true));
     client.on(EventType.VOICE_ENDED, () => setVoiceActive(false));
 
@@ -391,21 +425,13 @@ function VoiceChat() {
   return (
     <div>
       <h1>Modo Voice Chat</h1>
-      <button onClick={isConnected ? handleDisconnect : handleConnect}>
-        {isConnected ? 'Disconnect' : 'Connect'}
-      </button>
-      
-      <div>
-        Status: {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
-      </div>
-      
-      <div>
-        Voice: {voiceActive ? '🎤 Active' : '⏸ Silent'}
-      </div>
-      
-      <div>
-        Transcript: {transcript}
-      </div>
+      <button onClick={isConnected ? handleDisconnect : handleConnect}>{isConnected ? "Disconnect" : "Connect"}</button>
+
+      <div>Status: {isConnected ? "🟢 Connected" : "🔴 Disconnected"}</div>
+
+      <div>Voice: {voiceActive ? "🎤 Active" : "⏸ Silent"}</div>
+
+      <div>Transcript: {transcript}</div>
     </div>
   );
 }
@@ -418,35 +444,35 @@ function VoiceChat() {
   <div>
     <h1>Modo Voice Chat</h1>
     <button @click="isConnected ? disconnect() : connect()">
-      {{ isConnected ? 'Disconnect' : 'Connect' }}
+      {{ isConnected ? "Disconnect" : "Connect" }}
     </button>
-    
-    <div>Status: {{ isConnected ? '🟢 Connected' : '🔴 Disconnected' }}</div>
-    <div>Voice: {{ voiceActive ? '🎤 Active' : '⏸ Silent' }}</div>
+
+    <div>Status: {{ isConnected ? "🟢 Connected" : "🔴 Disconnected" }}</div>
+    <div>Voice: {{ voiceActive ? "🎤 Active" : "⏸ Silent" }}</div>
     <div>Transcript: {{ transcript }}</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { ModoVoiceClient, EventType } from '@modochats/voice-client';
+import {ref, onMounted, onUnmounted} from "vue";
+import {ModoVoiceClient, EventType} from "@modochats/voice-client";
 
 const client = new ModoVoiceClient({
-  apiBase: 'https://live.modochats.com',
-  chatbotUuid: 'your-chatbot-uuid',
-  userUniqueId: 'user-123'
+  apiBase: "https://live.modochats.com",
+  chatbotUuid: "your-chatbot-uuid",
+  userUniqueId: "user-123"
 });
 
 const isConnected = ref(false);
-const transcript = ref('');
+const transcript = ref("");
 const voiceActive = ref(false);
 
 onMounted(() => {
-  client.on(EventType.CONNECTED, () => isConnected.value = true);
-  client.on(EventType.DISCONNECTED, () => isConnected.value = false);
-  client.on(EventType.TRANSCRIPT_RECEIVED, (e) => transcript.value = e.text);
-  client.on(EventType.VOICE_DETECTED, () => voiceActive.value = true);
-  client.on(EventType.VOICE_ENDED, () => voiceActive.value = false);
+  client.on(EventType.CONNECTED, () => (isConnected.value = true));
+  client.on(EventType.DISCONNECTED, () => (isConnected.value = false));
+  client.on(EventType.TRANSCRIPT_RECEIVED, e => (transcript.value = e.text));
+  client.on(EventType.VOICE_DETECTED, () => (voiceActive.value = true));
+  client.on(EventType.VOICE_ENDED, () => (voiceActive.value = false));
 });
 
 onUnmounted(() => {
@@ -463,37 +489,36 @@ const disconnect = () => client.disconnect();
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Modo Voice Client</title>
-  <script type="module">
-    import { ModoVoiceClient, EventType } from 'https://unpkg.com/@modochats/voice-client';
-    
-    const client = new ModoVoiceClient({
-      apiBase: 'https://live.modochats.com',
-      chatbotUuid: 'your-chatbot-uuid',
-      userUniqueId: 'user-123'
-    });
-    
-    client.on(EventType.CONNECTED, () => {
-      document.getElementById('status').textContent = 'Connected';
-    });
-    
-    client.on(EventType.VOICE_METRICS, (event) => {
-      document.getElementById('voice').textContent = 
-        `RMS: ${event.rms.toFixed(4)}, dB: ${event.db.toFixed(1)}`;
-    });
-    
-    document.getElementById('connect').onclick = () => client.connect();
-    document.getElementById('disconnect').onclick = () => client.disconnect();
-  </script>
-</head>
-<body>
-  <h1>Modo Voice Client</h1>
-  <button id="connect">Connect</button>
-  <button id="disconnect">Disconnect</button>
-  <div id="status">Disconnected</div>
-  <div id="voice"></div>
-</body>
+  <head>
+    <title>Modo Voice Client</title>
+    <script type="module">
+      import {ModoVoiceClient, EventType} from "https://unpkg.com/@modochats/voice-client";
+
+      const client = new ModoVoiceClient({
+        apiBase: "https://live.modochats.com",
+        chatbotUuid: "your-chatbot-uuid",
+        userUniqueId: "user-123"
+      });
+
+      client.on(EventType.CONNECTED, () => {
+        document.getElementById("status").textContent = "Connected";
+      });
+
+      client.on(EventType.VOICE_METRICS, event => {
+        document.getElementById("voice").textContent = `RMS: ${event.rms.toFixed(4)}, dB: ${event.db.toFixed(1)}`;
+      });
+
+      document.getElementById("connect").onclick = () => client.connect();
+      document.getElementById("disconnect").onclick = () => client.disconnect();
+    </script>
+  </head>
+  <body>
+    <h1>Modo Voice Client</h1>
+    <button id="connect">Connect</button>
+    <button id="disconnect">Disconnect</button>
+    <div id="status">Disconnected</div>
+    <div id="voice"></div>
+  </body>
 </html>
 ```
 
@@ -502,7 +527,7 @@ const disconnect = () => client.disconnect();
 The SDK is written in TypeScript and provides full type definitions:
 
 ```typescript
-import { 
+import {
   ModoVoiceClient,
   ModoVoiceConfig,
   EventType,
@@ -511,12 +536,12 @@ import {
   AudioDeviceInfo,
   ConnectionMetrics,
   LogLevel
-} from '@modochats/voice-client';
+} from "@modochats/voice-client";
 
 const config: ModoVoiceConfig = {
-  apiBase: 'https://live.modochats.com',
-  chatbotUuid: 'abc-123',
-  userUniqueId: 'user-456'
+  apiBase: "https://live.modochats.com",
+  chatbotUuid: "abc-123",
+  userUniqueId: "user-456"
 };
 
 const client = new ModoVoiceClient(config);
@@ -534,6 +559,7 @@ client.on(EventType.VOICE_METRICS, (event: VoiceMetricsEvent) => {
 - Opera 75+
 
 Requires:
+
 - WebSocket support
 - Web Audio API
 - AudioWorklet API
@@ -557,4 +583,3 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for a list of changes.
-
