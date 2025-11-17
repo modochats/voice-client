@@ -50,7 +50,8 @@ export class ModoVoiceClient {
     this.audioService = new AudioService(this.eventEmitter, this.audioState, this.voiceMetrics, this.config.audio as any);
 
     // Set up microphone audio transmission to WebSocket
-    this.audioService.setSendAudioCallback((audioData: ArrayBuffer) => {
+    this.audioService.setSendAudioCallback((audioData: Uint8Array) => {
+      console.log("audio data", audioData);
       if (this.webSocketService.isConnected()) {
         try {
           this.webSocketService.send(audioData);

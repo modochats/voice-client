@@ -446,15 +446,12 @@
       let isOnHoldPlaying = false;
 
       function startOnHoldAudio() {
-        console.log("🎵 Starting on-hold audio, isOnHoldPlaying:", isOnHoldPlaying);
         if (isOnHoldPlaying && onHoldAudioElement) {
-          console.log("On-hold already playing, skipping");
           return;
         }
 
         stopOnHoldAudio();
 
-        console.log("Creating new Audio element for on-hold");
         const audioPath = "/data/audios/on_hold_audios/1.mp3";
 
         onHoldAudioElement = document.createElement("audio");
@@ -465,21 +462,17 @@
 
         onHoldAudioElement.onplay = () => {
           isOnHoldPlaying = true;
-          console.log("✅ On-hold audio started playing");
         };
 
         onHoldAudioElement.onpause = () => {
-          console.log("⏸ On-hold audio paused");
           isOnHoldPlaying = false;
         };
 
         onHoldAudioElement.onended = () => {
-          console.log("⏹ On-hold audio ended");
           isOnHoldPlaying = false;
         };
 
         onHoldAudioElement.onerror = e => {
-          console.error("❌ On-hold audio error:", e, onHoldAudioElement.error);
           if (onHoldAudioElement.error) {
             const errorCodes = {
               1: "MEDIA_ERR_ABORTED",
@@ -487,33 +480,26 @@
               3: "MEDIA_ERR_DECODE",
               4: "MEDIA_ERR_SRC_NOT_SUPPORTED"
             };
-            console.error(`Error code: ${onHoldAudioElement.error.code} (${errorCodes[onHoldAudioElement.error.code] || "UNKNOWN"})`);
           }
           isOnHoldPlaying = false;
         };
 
-        console.log("Loading audio element...");
         onHoldAudioElement.load();
 
-        console.log("Attempting to play on-hold audio...");
         const playPromise = onHoldAudioElement.play();
 
         if (playPromise !== undefined) {
           playPromise
             .then(() => {
-              console.log("✅ On-hold audio play() promise resolved");
               isOnHoldPlaying = true;
             })
             .catch(e => {
-              console.error("❌ Failed to play on-hold audio:", e);
-              console.error("Error details:", e.message, e.name);
               isOnHoldPlaying = false;
             });
         }
       }
 
       function stopOnHoldAudio() {
-        console.log("⏹ stopOnHoldAudio called, isOnHoldPlaying:", isOnHoldPlaying);
         if (onHoldAudioElement) {
           try {
             onHoldAudioElement.pause();
@@ -521,11 +507,9 @@
             onHoldAudioElement.src = "";
             onHoldAudioElement = null;
           } catch (e) {
-            console.warn("⚠️ Error stopping on-hold audio:", e);
           }
         }
         isOnHoldPlaying = false;
-        console.log("✅ On-hold audio stopped");
       }
 
       function updateStatus(state, text) {
@@ -590,7 +574,6 @@
             });
           }
         } catch (error) {
-          console.error("Error loading devices:", error);
           const select = document.getElementById("micSelect");
           select.innerHTML = "<option>Error loading microphones</option>";
         }
@@ -615,12 +598,11 @@
           updateStatus("connecting", "Connecting...");
 
           client = new ModoVoiceClient({
-            apiBase: "https://live.modochats.com",
+            apiBase: "http://172.18.5.4:8000",
             chatbotUuid,
             userUniqueId,
             logging: {
               level: LogLevel.DEBUG,
-              enableConsole: true,
               enableEvents: true
             },
             audio: {
@@ -629,7 +611,6 @@
           });
 
           client.on(EventType.CONNECTED, event => {
-            console.log("✅ Connected!", event);
             updateStatus("connected", `Connected - Chatbot: ${event.chatbotUuid.slice(0, 8)}...`);
             connectBtn.disabled = true;
             disconnectBtn.disabled = false;
@@ -639,7 +620,6 @@
           });
 
           client.on(EventType.DISCONNECTED, event => {
-            console.log("❌ Disconnected", event);
             updateStatus("disconnected", event.reason || "Disconnected");
             connectBtn.disabled = false;
             disconnectBtn.disabled = true;
@@ -650,7 +630,6 @@
           });
 
           client.on(EventType.CONNECTION_ERROR, event => {
-            console.error("Connection error:", event);
             updateStatus("disconnected", `Error: ${event.message}`);
             alert(`Connection failed: ${event.message}`);
           });
@@ -660,50 +639,39 @@
           });
 
           client.on(EventType.VOICE_DETECTED, event => {
-            console.log("🎤 Voice detected:", event.rms.toFixed(4), event.db.toFixed(1));
           });
 
           client.on(EventType.TURN_CHANGED, event => {
-            console.log("🔄 Turn changed to:", event.turn);
           });
 
           client.on(EventType.MICROPHONE_PAUSED, () => {
-            console.log("🔇 Microphone paused");
           });
 
           client.on(EventType.MICROPHONE_RESUMED, () => {
-            console.log("🔊 Microphone resumed");
           });
 
           client.on(EventType.AI_PLAYBACK_CHUNK, event => {
             // Audio chunks are automatically handled by the SDK's AudioService
             // This event is for monitoring/debugging
-            console.log("🔊 Received audio chunk:", event.size, "bytes");
           });
 
           client.on(EventType.TRANSCRIPT_RECEIVED, event => {
-            console.log("📝 Transcript:", event.text);
           });
 
           client.on(EventType.AI_RESPONSE_RECEIVED, event => {
-            console.log("💬 AI Response:", event.text);
           });
 
           client.on(EventType.MICROPHONE_PAUSED, () => {
-            console.log("⏸ Microphone paused");
           });
 
           client.on(EventType.MICROPHONE_RESUMED, () => {
-            console.log("▶️ Microphone resumed");
           });
 
           client.on(EventType.ERROR, event => {
-            console.error("❌ Error:", event.message);
           });
 
           client.onAny(event => {
             if (event.type !== EventType.VOICE_METRICS) {
-              console.log("📢 Event:", event.type, event);
             }
           });
 
@@ -711,7 +679,6 @@
 
           await client.connect(selectedDeviceId);
         } catch (error) {
-          console.error("Connection failed:", error);
           updateStatus("disconnected", "Connection Failed");
           alert(`Failed to connect: ${error.message}`);
         }
@@ -724,7 +691,6 @@
           await client.disconnect();
           client = null;
         } catch (error) {
-          console.error("Disconnect error:", error);
         }
       }
 

@@ -12,6 +12,7 @@ export class WebSocketService {
   private pingInterval: NodeJS.Timeout | null = null;
   private reconnectAttempt: number = 0;
   private intentionalDisconnect: boolean = false;
+  private turn: "User" | "Ai" = "Ai";
 
   constructor(config: WebSocketConfig, eventEmitter: EventEmitter, connectionState: ConnState) {
     this.config = config;
@@ -139,6 +140,7 @@ export class WebSocketService {
         const turnMsg = message as any;
         if (turnMsg.message && "turn" in turnMsg.message) {
           const turn = turnMsg.message.turn;
+          this.turn = turn === "ai" ? "Ai" : "User";
 
           // Pause microphone when AI is speaking, resume when user's turn
           if (turn === "ai") {
@@ -215,18 +217,19 @@ export class WebSocketService {
     this.connectionState.setReconnectTimer(timer);
   }
 
-  send(data: ArrayBuffer | string): void {
+  send(data: Uint8Array | string): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       throw new Error("WebSocket is not connected");
     }
-
+    console.log(data);
+    // if (this.turn === "User"  ) return;
     this.ws.send(data);
     this.connectionState.incrementMessagesSent();
 
     if (data instanceof ArrayBuffer) {
       this.connectionState.addBytesSent(data.byteLength);
     } else {
-      this.connectionState.addBytesSent(new TextEncoder().encode(data).byteLength);
+      this.connectionState.addBytesSent(new TextEncoder().encode(data as string).byteLength);
     }
   }
 

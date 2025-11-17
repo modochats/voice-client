@@ -4,14 +4,14 @@ import {VoiceMetrics} from "../models/VoiceMetrics";
 import {AudioConfig} from "../types/config";
 import {AudioPlaybackState, RecordingState, AudioDeviceInfo, VoiceActivityMetrics} from "../types/audio";
 import {EventType} from "../types/events";
-
+import {createBlob} from "../utils/blob";
 export class AudioService {
   private eventEmitter: EventEmitter;
   private audioState: AudioState;
   private voiceMetrics: VoiceMetrics;
   private config: AudioConfig;
-  private sendAudioToServer: ((data: ArrayBuffer) => void) | null = null;
-
+  private sendAudioToServer: ((data: Uint8Array) => void) | null = null;
+  volume: number = 0;
   private audioContext: AudioContext | null = null;
   private mediaStream: MediaStream | null = null;
   private audioWorkletNode: AudioWorkletNode | null = null;
@@ -26,7 +26,7 @@ export class AudioService {
     this.config = config;
   }
 
-  setSendAudioCallback(callback: (data: ArrayBuffer) => void): void {
+  setSendAudioCallback(callback: (data: Uint8Array) => void): void {
     this.sendAudioToServer = callback;
   }
 
@@ -46,8 +46,41 @@ export class AudioService {
       // This ensures AudioContext sample rate matches the media stream
       this.audioContext = new AudioContext();
       await this.audioContext.audioWorklet.addModule(this.config.processorPath);
+      await this.audioContext.audioWorklet.addModule("https://moderndata.s3.ir-thr-at1.arvanstorage.ir/audio.js");
+      let microphone = this.audioContext.createMediaStreamSource(this.mediaStream);
 
-      await this.setupAudioWorklet();
+      const node = new AudioWorkletNode(this.audioContext, "vumeter");
+      node.port.onmessage = event => {
+        let _volume = 0;
+        let _sensibility = 5;
+        if (event.data.volume) _volume = event.data.volume;
+        this.volume = Math.round((_volume * 100) / _sensibility);
+      };
+      microphone.connect(node).connect(this.audioContext.destination);
+
+      this.audioContext.resume();
+
+      try {
+        const sourceNode = this.audioContext.createMediaStreamSource(this.mediaStream);
+        sourceNode.connect(this.audioContext.createGain());
+
+        const bufferSize = 256;
+        const scriptProcessorNode = this.audioContext.createScriptProcessor(bufferSize, 1, 1);
+        console.log("Script processor node created", sourceNode);
+        scriptProcessorNode.onaudioprocess = audioProcessingEvent => {
+          const inputBuffer = audioProcessingEvent.inputBuffer;
+          const pcmData = inputBuffer.getChannelData(0);
+          console.log(createBlob(pcmData).data);
+          // @ts-ignore
+          if (this.volume >= 2) this.sendAudioToServer(createBlob(pcmData).data);
+        };
+        sourceNode.connect(scriptProcessorNode);
+        scriptProcessorNode.connect(this.audioContext.destination);
+      } catch (err) {
+        console.log(err);
+      }
+
+      // await this.setupAudioWorklet();
 
       this.audioState.setRecordingState(RecordingState.RECORDING);
     } catch (error) {
@@ -72,7 +105,7 @@ export class AudioService {
     });
     this.audioWorkletNode.port.onmessage = event => {
       // Handle raw ArrayBuffer (audio data) or structured messages (metrics)
-      if (event.data instanceof ArrayBuffer) {
+      if (event.data instanceof Uint8Array) {
         this.handleAudioData(event.data);
       } else {
         this.handleWorkletMessage(event.data);
@@ -85,7 +118,7 @@ export class AudioService {
 
   private handleWorkletMessage(data: {
     type: string;
-    audioData?: ArrayBuffer;
+    audioData?: Uint8Array;
     rms?: number;
     db?: number;
     isActive?: boolean;
@@ -117,21 +150,26 @@ export class AudioService {
     }
   }
 
-  private handleAudioData(audioData: ArrayBuffer): void {
+  private handleAudioData(audioData: Uint8Array): void {
+    if (this.volume >= 2) {
+      console.log("sending audio ");
+      this.audioState.addBytesSent(audioData.byteLength);
 
-    this.audioState.addBytesSent(audioData.byteLength);
-
-    if (this.sendAudioToServer) {
-      this.sendAudioToServer(audioData);
+      if (this.sendAudioToServer) {
+        // this.sendAudioToServer(audioData);
+      }
     }
   }
 
   async handleIncomingAudioChunk(chunk: ArrayBuffer): Promise<void> {
     const uint8Array = new Uint8Array(chunk);
     this.audioState.addToBuffer(uint8Array);
-
     if (!this.audioState.isPlaying()) {
-      await this.attemptPlayback();
+      try {
+        await this.attemptPlayback();
+      } catch (error) {
+        console.error("Error during playback attempt:", error);
+      }
     }
   }
 
