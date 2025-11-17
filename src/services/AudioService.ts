@@ -4,7 +4,7 @@ import {VoiceMetrics} from "../models/VoiceMetrics";
 import {AudioConfig} from "../types/config";
 import {AudioPlaybackState, RecordingState, AudioDeviceInfo, VoiceActivityMetrics} from "../types/audio";
 import {EventType} from "../types/events";
-import {createBlob} from "../utils/blob";
+import { float32ToPcm16, pcm16ToBase64} from "../utils/blob";
 export class AudioService {
   private eventEmitter: EventEmitter;
   private audioState: AudioState;
@@ -44,7 +44,7 @@ export class AudioService {
 
       // Create AudioContext WITHOUT specifying sample rate - let it use device's native rate
       // This ensures AudioContext sample rate matches the media stream
-      this.audioContext = new AudioContext();
+      this.audioContext = new AudioContext({sampleRate: 16000});
       await this.audioContext.audioWorklet.addModule(this.config.processorPath);
       await this.audioContext.audioWorklet.addModule("https://moderndata.s3.ir-thr-at1.arvanstorage.ir/audio.js");
       let microphone = this.audioContext.createMediaStreamSource(this.mediaStream);
@@ -69,10 +69,13 @@ export class AudioService {
         console.log("Script processor node created", sourceNode);
         scriptProcessorNode.onaudioprocess = audioProcessingEvent => {
           const inputBuffer = audioProcessingEvent.inputBuffer;
-          const pcmData = inputBuffer.getChannelData(0);
-          console.log(createBlob(pcmData).data);
+          const floatSamples = inputBuffer.getChannelData(0);
+
+          // Convert to PCM 16-bit and send base64 encoded data
+          const pcm16 = float32ToPcm16(floatSamples);
+          const base64Audio = pcm16ToBase64(pcm16);
           // @ts-ignore
-          if (this.volume >= 2) this.sendAudioToServer(createBlob(pcmData).data);
+          if (this.volume >= 2) this.sendAudioToServer(base64Audio);
         };
         sourceNode.connect(scriptProcessorNode);
         scriptProcessorNode.connect(this.audioContext.destination);

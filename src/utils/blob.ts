@@ -1,32 +1,25 @@
-export function encode(bytes: Uint8Array) {
+
+
+export function float32ToPcm16(float32Array: Float32Array) {
+  const pcm16 = new Int16Array(float32Array.length);
+
+  for (let i = 0; i < float32Array.length; i++) {
+    // Clamp values to -1.0...1.0 range
+    const sample = Math.max(-1, Math.min(1, float32Array[i]));
+
+    // Convert to 16-bit range: negative values to -32768..0, positive to 0..32767
+    pcm16[i] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+  }
+
+  return pcm16;
+}
+export function pcm16ToBase64(pcm16: Int16Array) {
+  const bytes = new Uint8Array(pcm16.buffer);
   let binary = "";
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
+
+  for (let i = 0; i < bytes.length; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
+
   return btoa(binary);
-}
-
-export function decode(base64: string): Uint8Array {
-  const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
-}
-
-export function createBlob(data: Float32Array) {
-  const l = data.length;
-  const int16 = new Int16Array(l);
-  for (let i = 0; i < l; i++) {
-    // convert float32 -1 to 1 to int16 -32768 to 32767
-    int16[i] = data[i] * 32768;
-  }
-
-  return {
-    data: encode(new Uint8Array(int16.buffer)),
-    mimeType: "audio/pcm;rate=16000"
-  };
 }
