@@ -506,8 +506,7 @@
             onHoldAudioElement.currentTime = 0;
             onHoldAudioElement.src = "";
             onHoldAudioElement = null;
-          } catch (e) {
-          }
+          } catch (e) {}
         }
         isOnHoldPlaying = false;
       }
@@ -598,7 +597,7 @@
           updateStatus("connecting", "Connecting...");
 
           client = new ModoVoiceClient({
-            apiBase: "http://172.18.5.4:8000",
+            apiBase: "https://live.modochats.com",
             chatbotUuid,
             userUniqueId,
             logging: {
@@ -638,37 +637,28 @@
             updateVoiceLevel(event.rms, event.db, event.isActive, event.noiseFloor, event.isPaused);
           });
 
-          client.on(EventType.VOICE_DETECTED, event => {
-          });
+          client.on(EventType.VOICE_DETECTED, event => {});
 
-          client.on(EventType.TURN_CHANGED, event => {
-          });
+          client.on(EventType.TURN_CHANGED, event => {});
 
-          client.on(EventType.MICROPHONE_PAUSED, () => {
-          });
+          client.on(EventType.MICROPHONE_PAUSED, () => {});
 
-          client.on(EventType.MICROPHONE_RESUMED, () => {
-          });
+          client.on(EventType.MICROPHONE_RESUMED, () => {});
 
           client.on(EventType.AI_PLAYBACK_CHUNK, event => {
             // Audio chunks are automatically handled by the SDK's AudioService
             // This event is for monitoring/debugging
           });
 
-          client.on(EventType.TRANSCRIPT_RECEIVED, event => {
-          });
+          client.on(EventType.TRANSCRIPT_RECEIVED, event => {});
 
-          client.on(EventType.AI_RESPONSE_RECEIVED, event => {
-          });
+          client.on(EventType.AI_RESPONSE_RECEIVED, event => {});
 
-          client.on(EventType.MICROPHONE_PAUSED, () => {
-          });
+          client.on(EventType.MICROPHONE_PAUSED, () => {});
 
-          client.on(EventType.MICROPHONE_RESUMED, () => {
-          });
+          client.on(EventType.MICROPHONE_RESUMED, () => {});
 
-          client.on(EventType.ERROR, event => {
-          });
+          client.on(EventType.ERROR, event => {});
 
           client.onAny(event => {
             if (event.type !== EventType.VOICE_METRICS) {
@@ -690,8 +680,7 @@
         try {
           await client.disconnect();
           client = null;
-        } catch (error) {
-        }
+        } catch (error) {}
       }
 
       document.getElementById("connectBtn").onclick = connect;

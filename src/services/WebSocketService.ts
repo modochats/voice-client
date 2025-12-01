@@ -2,6 +2,7 @@ import {EventEmitter} from "./EventEmitter";
 import {ConnectionState as ConnState} from "../models/ConnectionState";
 import {WebSocketConfig, IncomingMessage, WebSocketMessageType, ConnectionState as State} from "../types/websocket";
 import {EventType} from "../types/events";
+import {AudioCollector, buildAudioWav, downloadAudioFile} from "../utils/audio-builder";
 
 export class WebSocketService {
   private ws: WebSocket | null = null;
@@ -13,11 +14,13 @@ export class WebSocketService {
   private reconnectAttempt: number = 0;
   private intentionalDisconnect: boolean = false;
   private turn: "User" | "Ai" = "Ai";
+  private audioCollector: AudioCollector;
 
   constructor(config: WebSocketConfig, eventEmitter: EventEmitter, connectionState: ConnState) {
     this.config = config;
     this.eventEmitter = eventEmitter;
     this.connectionState = connectionState;
+    this.audioCollector = new AudioCollector();
   }
 
   async connect(): Promise<void> {
@@ -221,12 +224,14 @@ export class WebSocketService {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       throw new Error("WebSocket is not connected");
     }
-    console.log(data);
-    // if (this.turn === "User"  ) return;
+
     this.ws.send(data);
     this.connectionState.incrementMessagesSent();
 
-    if (data instanceof ArrayBuffer) {
+    if (data instanceof Uint8Array) {
+      // Build WAV file from the audio data for testing/debugging
+      this.audioCollector.addChunk(data);
+
       this.connectionState.addBytesSent(data.byteLength);
     } else {
       this.connectionState.addBytesSent(new TextEncoder().encode(data as string).byteLength);
@@ -236,6 +241,7 @@ export class WebSocketService {
   disconnect(): void {
     if (!this.ws) return;
 
+    this.audioCollector.download();
     // Mark this as an intentional disconnect to prevent auto-reconnect
     this.intentionalDisconnect = true;
 
