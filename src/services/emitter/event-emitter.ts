@@ -1,11 +1,11 @@
-import { EventType, ModoVoiceEvent, EventListener, EventListenerMap } from '../types/events';
+import {EventType, ModoVoiceEvent, EventListener, EventListenerMap} from "../../types/events";
 
 export class EventEmitter {
   private listeners: EventListenerMap = {};
   private onceListeners: EventListenerMap = {};
   private wildcardListeners: Set<EventListener> = new Set();
 
-  on<T extends EventType>(eventType: T, listener: EventListener<Extract<ModoVoiceEvent, { type: T }>>): () => void {
+  on<T extends EventType>(eventType: T, listener: EventListener<Extract<ModoVoiceEvent, {type: T}>>): () => void {
     if (!this.listeners[eventType]) {
       this.listeners[eventType] = new Set() as any;
     }
@@ -14,7 +14,7 @@ export class EventEmitter {
     return () => this.off(eventType, listener);
   }
 
-  once<T extends EventType>(eventType: T, listener: EventListener<Extract<ModoVoiceEvent, { type: T }>>): () => void {
+  once<T extends EventType>(eventType: T, listener: EventListener<Extract<ModoVoiceEvent, {type: T}>>): () => void {
     if (!this.onceListeners[eventType]) {
       this.onceListeners[eventType] = new Set() as any;
     }
@@ -23,14 +23,14 @@ export class EventEmitter {
     return () => this.offOnce(eventType, listener);
   }
 
-  off<T extends EventType>(eventType: T, listener: EventListener<Extract<ModoVoiceEvent, { type: T }>>): void {
+  off<T extends EventType>(eventType: T, listener: EventListener<Extract<ModoVoiceEvent, {type: T}>>): void {
     const listeners = this.listeners[eventType];
     if (listeners) {
       listeners.delete(listener as EventListener);
     }
   }
 
-  private offOnce<T extends EventType>(eventType: T, listener: EventListener<Extract<ModoVoiceEvent, { type: T }>>): void {
+  private offOnce<T extends EventType>(eventType: T, listener: EventListener<Extract<ModoVoiceEvent, {type: T}>>): void {
     const listeners = this.onceListeners[eventType];
     if (listeners) {
       listeners.delete(listener as EventListener);
@@ -49,9 +49,7 @@ export class EventEmitter {
   async emit(event: ModoVoiceEvent): Promise<void> {
     const regularListeners = this.listeners[event.type];
     if (regularListeners) {
-      const promises = Array.from(regularListeners as any).map((listener: any) => 
-        this.safeInvoke(listener, event)
-      );
+      const promises = Array.from(regularListeners as any).map((listener: any) => this.safeInvoke(listener, event));
       await Promise.all(promises);
     }
 
@@ -59,17 +57,13 @@ export class EventEmitter {
     if (onceListeners) {
       const listeners = Array.from(onceListeners as any);
       onceListeners.clear();
-      
-      const promises = listeners.map((listener: any) => 
-        this.safeInvoke(listener, event)
-      );
+
+      const promises = listeners.map((listener: any) => this.safeInvoke(listener, event));
       await Promise.all(promises);
     }
 
     if (this.wildcardListeners.size > 0) {
-      const promises = Array.from(this.wildcardListeners).map(listener => 
-        this.safeInvoke(listener, event)
-      );
+      const promises = Array.from(this.wildcardListeners).map(listener => this.safeInvoke(listener, event));
       await Promise.all(promises);
     }
   }
@@ -103,9 +97,7 @@ export class EventEmitter {
     if (eventType) {
       return this.listenerCount(eventType) > 0;
     }
-    return Object.keys(this.listeners).length > 0 || 
-           Object.keys(this.onceListeners).length > 0 || 
-           this.wildcardListeners.size > 0;
+    return Object.keys(this.listeners).length > 0 || Object.keys(this.onceListeners).length > 0 || this.wildcardListeners.size > 0;
   }
 
   getEventTypes(): EventType[] {
@@ -115,4 +107,3 @@ export class EventEmitter {
     return Array.from(types);
   }
 }
-

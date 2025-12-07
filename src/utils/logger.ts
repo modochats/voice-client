@@ -1,6 +1,6 @@
-import { LogLevel, LoggingConfig } from '../types/config';
-import { EventEmitter } from '../services/EventEmitter';
-import { EventType } from '../types/events';
+import {LogLevel, LoggingConfig} from "../types/config";
+import {EventEmitter} from "../services/emitter/event-emitter";
+import {EventType} from "../types/events";
 
 export class Logger {
   private config: LoggingConfig;
@@ -47,29 +47,25 @@ export class Logger {
   }
 
   private logToConsole(level: LogLevel, message: string, context?: string, data?: unknown): void {
-    const timestamp = this.config.includeTimestamp 
-      ? `[${new Date().toISOString()}]` 
-      : '';
-    
-    const contextStr = this.config.includeContext && context 
-      ? `[${context}]` 
-      : '';
-    
-    const prefix = [timestamp, contextStr].filter(Boolean).join(' ');
+    const timestamp = this.config.includeTimestamp ? `[${new Date().toISOString()}]` : "";
+
+    const contextStr = this.config.includeContext && context ? `[${context}]` : "";
+
+    const prefix = [timestamp, contextStr].filter(Boolean).join(" ");
     const fullMessage = `${prefix} ${message}`;
 
     switch (level) {
       case LogLevel.ERROR:
-        console.error(fullMessage, data || '');
+        console.error(fullMessage, data || "");
         break;
       case LogLevel.WARN:
-        console.warn(fullMessage, data || '');
+        console.warn(fullMessage, data || "");
         break;
       case LogLevel.INFO:
-        console.info(fullMessage, data || '');
+        console.info(fullMessage, data || "");
         break;
       case LogLevel.DEBUG:
-        console.debug(fullMessage, data || '');
+        console.debug(fullMessage, data || "");
         break;
     }
   }
@@ -123,7 +119,7 @@ export class Logger {
   }
 
   updateConfig(config: Partial<LoggingConfig>): void {
-    this.config = { ...this.config, ...config };
+    this.config = {...this.config, ...config};
   }
 }
 
@@ -132,12 +128,12 @@ export function createLogger(config: LoggingConfig, eventEmitter?: EventEmitter)
 }
 
 export function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  
+  if (bytes === 0) return "0 B";
+
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+
   return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
 }
 
@@ -151,4 +147,3 @@ export function formatDuration(ms: number): string {
 export function formatTimestamp(timestamp: number): string {
   return new Date(timestamp).toISOString();
 }
-

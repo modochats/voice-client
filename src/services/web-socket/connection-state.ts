@@ -1,4 +1,4 @@
-import { ConnectionState as State, ConnectionMetrics, WebSocketError } from '../types/websocket';
+import {ConnectionState as State, ConnectionMetrics, WebSocketError} from "./websocket";
 
 export class ConnectionState {
   private state: State = State.DISCONNECTED;
@@ -10,7 +10,7 @@ export class ConnectionState {
     messagesSent: 0,
     messagesReceived: 0
   };
-  
+
   private lastError: WebSocketError | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
 
@@ -20,7 +20,7 @@ export class ConnectionState {
 
   setState(state: State): void {
     this.state = state;
-    
+
     if (state === State.CONNECTED) {
       this.metrics.connectedAt = Date.now();
       this.metrics.reconnectAttempts = 0;
@@ -51,7 +51,7 @@ export class ConnectionState {
   }
 
   getMetrics(): ConnectionMetrics {
-    const current = { ...this.metrics };
+    const current = {...this.metrics};
     if (this.metrics.connectedAt && !this.metrics.disconnectedAt) {
       current.duration = Date.now() - this.metrics.connectedAt;
     }
@@ -136,4 +136,3 @@ export class ConnectionState {
     return 0;
   }
 }
-

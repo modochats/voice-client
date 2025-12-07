@@ -283,7 +283,6 @@ EventType.DEBUG;
 - `isConnected(): boolean` - Check connection status
 - `getAvailableDevices(): Promise<AudioDeviceInfo[]>` - Get available audio devices
 - `getConnectionMetrics(): ConnectionMetrics` - Get connection statistics
-- `getVoiceMetrics()` - Get voice activity metrics
 - `setLogLevel(level: LogLevel): void` - Set logging level
 - `getConfig(): Required<ModoVoiceConfig>` - Get current configuration
 - `updateConfig(updates: Partial<ModoVoiceConfig>): void` - Update configuration
@@ -355,10 +354,6 @@ Check if audio system is initialized.
 ##### getConnectionMetrics(): ConnectionMetrics
 
 Get connection statistics.
-
-##### getVoiceMetrics(): VoiceActivityMetrics
-
-Get current voice activity metrics.
 
 ##### getAvailableDevices(): Promise<AudioDeviceInfo[]>
 
@@ -527,16 +522,7 @@ const disconnect = () => client.disconnect();
 The SDK is written in TypeScript and provides full type definitions:
 
 ```typescript
-import {
-  ModoVoiceClient,
-  ModoVoiceConfig,
-  EventType,
-  ConnectedEvent,
-  VoiceMetricsEvent,
-  AudioDeviceInfo,
-  ConnectionMetrics,
-  LogLevel
-} from "@modochats/voice-client";
+import {ModoVoiceClient, ModoVoiceConfig, EventType, ConnectedEvent, AudioDeviceInfo, ConnectionMetrics, LogLevel} from "@modochats/voice-client";
 
 const config: ModoVoiceConfig = {
   apiBase: "https://live.modochats.com",
@@ -545,10 +531,6 @@ const config: ModoVoiceConfig = {
 };
 
 const client = new ModoVoiceClient(config);
-
-client.on(EventType.VOICE_METRICS, (event: VoiceMetricsEvent) => {
-  console.log(event.rms, event.db, event.isActive);
-});
 ```
 
 ## Browser Compatibility

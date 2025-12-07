@@ -1,9 +1,8 @@
-import {EventEmitter} from "./EventEmitter";
-import {ConnectionState as ConnState} from "../models/ConnectionState";
-import {WebSocketConfig, IncomingMessage, WebSocketMessageType, ConnectionState as State} from "../types/websocket";
-import {EventType} from "../types/events";
-import {AudioCollector, buildAudioWav, downloadAudioFile} from "../utils/audio-builder";
-
+import {EventEmitter} from "../emitter/event-emitter";
+import {ConnectionState as ConnState} from "../../models";
+import {WebSocketConfig, IncomingMessage, WebSocketMessageType, ConnectionState as State} from "./websocket";
+import {EventType} from "../../types/events";
+import {AudioCollector} from "../audio/audio-collector";
 export class WebSocketService {
   private ws: WebSocket | null = null;
   private config: WebSocketConfig;
@@ -229,12 +228,12 @@ export class WebSocketService {
     this.connectionState.incrementMessagesSent();
 
     if (data instanceof Uint8Array) {
-      // Build WAV file from the audio data for testing/debugging
       this.audioCollector.addChunk(data);
-
       this.connectionState.addBytesSent(data.byteLength);
     } else {
-      this.connectionState.addBytesSent(new TextEncoder().encode(data as string).byteLength);
+      const byteSize = Math.ceil(data.length * 0.75); // Base64 is 4/3 the size of binary
+      this.audioCollector.addChunk(data);
+      this.connectionState.addBytesSent(byteSize);
     }
   }
 

@@ -56,6 +56,29 @@ export function buildAudioWav(audioData: Uint8Array | Int16Array, sampleRate: nu
   return new Blob([buffer], {type: "audio/wav"});
 }
 
+export function float32ToPcm16(float32Array: Float32Array) {
+  const pcm16 = new Int16Array(float32Array.length);
+
+  for (let i = 0; i < float32Array.length; i++) {
+    // Clamp values to -1.0...1.0 range
+    const sample = Math.max(-1, Math.min(1, float32Array[i]));
+
+    // Convert to 16-bit range: negative values to -32768..0, positive to 0..32767
+    pcm16[i] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+  }
+
+  return pcm16;
+}
+export function pcm16ToBase64(pcm16: Int16Array) {
+  const bytes = new Uint8Array(pcm16.buffer);
+  let binary = "";
+
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+
+  return btoa(binary);
+}
 /**
  * Downloads a WAV file to the user's device
  * @param blob - Blob of the WAV file
@@ -86,75 +109,3 @@ export function playAudioBlob(blob: Blob): HTMLAudioElement {
 /**
  * Audio collector class for accumulating audio chunks and exporting as WAV
  */
-export class AudioCollector {
-  private chunks: Uint8Array[] = [];
-  private sampleRate: number;
-  private channels: number;
-
-  constructor(sampleRate: number = 16000, channels: number = 1) {
-    this.sampleRate = sampleRate;
-    this.channels = channels;
-  }
-
-  /**
-   * Add an audio chunk to the collection
-   */
-  addChunk(chunk: Uint8Array): void {
-    this.chunks.push(chunk);
-  }
-
-  /**
-   * Get the total number of bytes collected
-   */
-  getTotalBytes(): number {
-    return this.chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
-  }
-
-  /**
-   * Build a WAV file from collected chunks
-   */
-  buildWav(): Blob {
-    // Combine all chunks into a single array
-    const totalBytes = this.getTotalBytes();
-    const combined = new Uint8Array(totalBytes);
-    let offset = 0;
-
-    for (const chunk of this.chunks) {
-      combined.set(chunk, offset);
-      offset += chunk.byteLength;
-    }
-
-    return buildAudioWav(combined, this.sampleRate, this.channels);
-  }
-
-  /**
-   * Download the collected audio as a WAV file
-   */
-  download(filename: string = "audio.wav"): void {
-    const wavBlob = this.buildWav();
-    downloadAudioFile(wavBlob, filename);
-  }
-
-  /**
-   * Play the collected audio
-   */
-  play(): HTMLAudioElement {
-    const wavBlob = this.buildWav();
-    return playAudioBlob(wavBlob);
-  }
-
-  /**
-   * Clear all collected chunks
-   */
-  clear(): void {
-    this.chunks = [];
-  }
-
-  /**
-   * Get the audio data as a blob URL for use in audio element
-   */
-  getBlobUrl(): string {
-    const wavBlob = this.buildWav();
-    return URL.createObjectURL(wavBlob);
-  }
-}

@@ -129,13 +129,6 @@ async function main() {
     console.log("📊 Real-time metrics will be displayed");
     console.log("Press Ctrl+C to disconnect\n");
 
-    setInterval(() => {
-      const voiceMetrics = client.getVoiceMetrics();
-      if (!voiceMetrics.isActive && !voiceMetrics.isPaused) {
-        process.stdout.write(`\r⏸ Silent: Noise Floor=${voiceMetrics.noiseFloor.toFixed(4)}   `);
-      }
-    }, 100);
-
     process.on("SIGINT", async () => {
       console.log("\n\n👋 Shutting down...");
       console.log(`📈 Total conversations: ${conversationCount}`);

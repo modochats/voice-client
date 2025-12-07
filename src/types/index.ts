@@ -1,5 +1,4 @@
-export * from './events';
-export * from './audio';
-export * from './websocket';
-export * from './config';
-
+export * from "./events";
+export * from "../services/audio/audio";
+export * from "../services/web-socket/websocket";
+export * from "./config";

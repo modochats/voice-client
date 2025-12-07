@@ -1,18 +1,18 @@
-import { AudioPlaybackState, RecordingState, AudioBufferInfo, PlaybackMetrics, RecordingMetrics } from '../types/audio';
+import {AudioPlaybackState, RecordingState, AudioBufferInfo, PlaybackMetrics, RecordingMetrics} from "./audio";
 
 export class AudioState {
   private playbackState: AudioPlaybackState = AudioPlaybackState.IDLE;
   private recordingState: RecordingState = RecordingState.IDLE;
-  
+
   private audioQueue: Uint8Array[] = [];
   private audioBuffer: Uint8Array[] = [];
   private audioBufferSize: number = 0;
   private isStreamingComplete: boolean = false;
-  
+
   private currentAudioElement: HTMLAudioElement | null = null;
   private recordingStartTime: number = 0;
   private playbackStartTime: number = 0;
-  
+
   private totalBytesReceived: number = 0;
   private totalBytesSent: number = 0;
 
@@ -165,4 +165,3 @@ export class AudioState {
     this.totalBytesSent = 0;
   }
 }
-

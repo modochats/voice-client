@@ -1,14 +1,12 @@
-import {EventEmitter} from "./EventEmitter";
-import {AudioState} from "../models/AudioState";
-import {VoiceMetrics} from "../models/VoiceMetrics";
-import {AudioConfig} from "../types/config";
-import {AudioPlaybackState, RecordingState, AudioDeviceInfo, VoiceActivityMetrics} from "../types/audio";
-import {EventType} from "../types/events";
-import { float32ToPcm16, pcm16ToBase64} from "../utils/blob";
+import {EventEmitter} from "../emitter/event-emitter";
+import {AudioState} from "./audio-state";
+import {AudioConfig} from "../../types/config";
+import {AudioPlaybackState, RecordingState, AudioDeviceInfo, VoiceActivityMetrics} from "./audio";
+import {EventType} from "../../types/events";
+import {float32ToPcm16, pcm16ToBase64} from "./file-processing";
 export class AudioService {
   private eventEmitter: EventEmitter;
   private audioState: AudioState;
-  private voiceMetrics: VoiceMetrics;
   private config: AudioConfig;
   private sendAudioToServer: ((data: Uint8Array) => void) | null = null;
   volume: number = 0;
@@ -19,10 +17,9 @@ export class AudioService {
   private playbackRetryTimer: NodeJS.Timeout | null = null;
   private micResumeTimeout: NodeJS.Timeout | null = null;
 
-  constructor(eventEmitter: EventEmitter, audioState: AudioState, voiceMetrics: VoiceMetrics, config: AudioConfig) {
+  constructor(eventEmitter: EventEmitter, audioState: AudioState, config: AudioConfig) {
     this.eventEmitter = eventEmitter;
     this.audioState = audioState;
-    this.voiceMetrics = voiceMetrics;
     this.config = config;
   }
 
@@ -66,7 +63,6 @@ export class AudioService {
 
         const bufferSize = 256;
         const scriptProcessorNode = this.audioContext.createScriptProcessor(bufferSize, 1, 1);
-        console.log("Script processor node created", sourceNode);
         scriptProcessorNode.onaudioprocess = audioProcessingEvent => {
           const inputBuffer = audioProcessingEvent.inputBuffer;
           const floatSamples = inputBuffer.getChannelData(0);
@@ -94,73 +90,6 @@ export class AudioService {
         message: `Failed to initialize audio: ${(error as Error).message}`
       });
       throw error;
-    }
-  }
-
-  private async setupAudioWorklet(): Promise<void> {
-    if (!this.audioContext || !this.mediaStream) {
-      throw new Error("Audio context or media stream not initialized");
-    }
-
-    const source = this.audioContext.createMediaStreamSource(this.mediaStream);
-    this.audioWorkletNode = new AudioWorkletNode(this.audioContext, "audio-processor", {
-      processorOptions: this.config.processor
-    });
-    this.audioWorkletNode.port.onmessage = event => {
-      // Handle raw ArrayBuffer (audio data) or structured messages (metrics)
-      if (event.data instanceof Uint8Array) {
-        this.handleAudioData(event.data);
-      } else {
-        this.handleWorkletMessage(event.data);
-      }
-    };
-
-    source.connect(this.audioWorkletNode);
-    this.audioWorkletNode.connect(this.audioContext.destination);
-  }
-
-  private handleWorkletMessage(data: {
-    type: string;
-    audioData?: Uint8Array;
-    rms?: number;
-    db?: number;
-    isActive?: boolean;
-    isPaused?: boolean;
-    noiseFloor?: number;
-  }): void {
-    switch (data.type) {
-      case "audioData":
-        if (data.audioData) {
-          this.handleAudioData(data.audioData);
-        }
-        break;
-
-      case "voice-level": // Match audio-processor.js format
-      case "voiceLevel":
-        if (data.rms !== undefined && data.db !== undefined) {
-          const metrics: VoiceActivityMetrics = {
-            rms: data.rms,
-            db: data.db,
-            isActive: data.isActive ?? false,
-            isPaused: data.isPaused ?? false,
-            noiseFloor: data.noiseFloor ?? 0,
-            threshold: this.config.processor.voiceThreshold
-          };
-
-          this.voiceMetrics.update(metrics);
-        }
-        break;
-    }
-  }
-
-  private handleAudioData(audioData: Uint8Array): void {
-    if (this.volume >= 2) {
-      console.log("sending audio ");
-      this.audioState.addBytesSent(audioData.byteLength);
-
-      if (this.sendAudioToServer) {
-        // this.sendAudioToServer(audioData);
-      }
     }
   }
 
@@ -334,6 +263,5 @@ export class AudioService {
     }
 
     this.audioState.reset();
-    this.voiceMetrics.reset();
   }
 }

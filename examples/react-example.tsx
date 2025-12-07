@@ -22,7 +22,6 @@ export const VoiceChat: React.FC<VoiceChatProps> = ({chatbotUuid, userUniqueId})
   const [selectedDevice, setSelectedDevice] = useState<string>("");
   const [transcript, setTranscript] = useState<string>("");
   const [aiResponse, setAiResponse] = useState<string>("");
-  const [voiceMetrics, setVoiceMetrics] = useState<VoiceActivityMetrics | null>(null);
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [error, setError] = useState<string>("");
 
@@ -66,17 +65,6 @@ export const VoiceChat: React.FC<VoiceChatProps> = ({chatbotUuid, userUniqueId})
 
       client.on(EventType.AI_RESPONSE_RECEIVED, event => {
         setAiResponse(event.text);
-      }),
-
-      client.on(EventType.VOICE_METRICS, event => {
-        setVoiceMetrics({
-          rms: event.rms,
-          db: event.db,
-          isActive: event.isActive,
-          isPaused: event.isPaused,
-          noiseFloor: event.noiseFloor,
-          threshold: event.threshold
-        });
       }),
 
       client.on(EventType.MICROPHONE_PAUSED, () => {
@@ -183,32 +171,6 @@ export const VoiceChat: React.FC<VoiceChatProps> = ({chatbotUuid, userUniqueId})
         <div style={{fontSize: "18px", marginBottom: "10px"}}>Connection: {isConnected ? "🟢 Connected" : "🔴 Disconnected"}</div>
         <div style={{fontSize: "18px"}}>AI: {isAiSpeaking ? "🤖 Speaking..." : "⏸ Idle"}</div>
       </div>
-
-      {voiceMetrics && (
-        <div
-          style={{
-            padding: "20px",
-            backgroundColor: "#e7f3ff",
-            borderRadius: "8px",
-            marginBottom: "20px"
-          }}>
-          <h3 style={{marginTop: 0}}>Voice Metrics</h3>
-          <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px"}}>
-            <div>
-              <strong>RMS:</strong> {voiceMetrics.rms.toFixed(4)}
-            </div>
-            <div>
-              <strong>dB:</strong> {voiceMetrics.db.toFixed(1)}
-            </div>
-            <div>
-              <strong>Active:</strong> {voiceMetrics.isActive ? "🎤 Yes" : "⏸ No"}
-            </div>
-            <div>
-              <strong>Paused:</strong> {voiceMetrics.isPaused ? "Yes" : "No"}
-            </div>
-          </div>
-        </div>
-      )}
 
       {transcript && (
         <div

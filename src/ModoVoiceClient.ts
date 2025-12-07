@@ -1,15 +1,14 @@
-import {EventEmitter} from "./services/EventEmitter";
-import {WebSocketService} from "./services/WebSocketService";
-import {AudioService} from "./services/AudioService";
-import {AudioState} from "./models/AudioState";
-import {ConnectionState} from "./models/ConnectionState";
-import {VoiceMetrics} from "./models/VoiceMetrics";
+import {EventEmitter} from "./services/emitter/event-emitter";
+import {WebSocketService} from "./services/web-socket/service";
+import {AudioService} from "./services/audio/service";
+import {AudioState} from "./services/audio/audio-state";
 import {Logger, createLogger} from "./utils/logger";
 import {validateConfig} from "./utils/validators";
 import {ModoVoiceConfig, DEFAULT_CONFIG, LogLevel} from "./types/config";
 import {EventType, EventListener, ModoVoiceEvent} from "./types/events";
-import {AudioDeviceInfo} from "./types/audio";
-import {ConnectionMetrics} from "./types/websocket";
+import {AudioDeviceInfo} from "./services/audio/audio";
+import {ConnectionMetrics} from "./services/web-socket/websocket";
+import {ConnectionState} from "./models";
 
 export class ModoVoiceClient {
   private config: Required<ModoVoiceConfig>;
@@ -17,7 +16,6 @@ export class ModoVoiceClient {
   private eventEmitter: EventEmitter;
   private audioState: AudioState;
   private connectionState: ConnectionState;
-  private voiceMetrics: VoiceMetrics;
   private logger: Logger;
 
   private webSocketService: WebSocketService;
@@ -33,7 +31,6 @@ export class ModoVoiceClient {
     this.eventEmitter = new EventEmitter();
     this.audioState = new AudioState();
     this.connectionState = new ConnectionState();
-    this.voiceMetrics = new VoiceMetrics();
     this.logger = createLogger(this.config.logging as any, this.eventEmitter);
 
     this.webSocketService = new WebSocketService(
@@ -47,11 +44,10 @@ export class ModoVoiceClient {
       this.connectionState
     );
 
-    this.audioService = new AudioService(this.eventEmitter, this.audioState, this.voiceMetrics, this.config.audio as any);
+    this.audioService = new AudioService(this.eventEmitter, this.audioState, this.config.audio as any);
 
     // Set up microphone audio transmission to WebSocket
     this.audioService.setSendAudioCallback((audioData: Uint8Array) => {
-      console.log("audio data", audioData);
       if (this.webSocketService.isConnected()) {
         try {
           this.webSocketService.send(audioData);
@@ -174,10 +170,6 @@ export class ModoVoiceClient {
 
   getConnectionMetrics(): ConnectionMetrics {
     return this.connectionState.getMetrics();
-  }
-
-  getVoiceMetrics() {
-    return this.voiceMetrics.getCurrent();
   }
 
   async getAvailableDevices(): Promise<AudioDeviceInfo[]> {

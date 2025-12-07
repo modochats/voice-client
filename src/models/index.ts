@@ -1,4 +1,3 @@
-export { AudioState } from './AudioState';
-export { ConnectionState } from './ConnectionState';
-export { VoiceMetrics } from './VoiceMetrics';
+export {ConnectionState} from "../services/web-socket/connection-state";
 
+export {AudioState} from "../services/audio/audio-state";
