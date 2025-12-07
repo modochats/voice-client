@@ -1,4 +1,4 @@
-import {EventType, ModoVoiceEvent, EventListener, EventListenerMap} from "../../types/events";
+import {EventType, ModoVoiceEvent, EventListener, EventListenerMap} from "../shared/types/events";
 
 export class EventEmitter {
   private listeners: EventListenerMap = {};

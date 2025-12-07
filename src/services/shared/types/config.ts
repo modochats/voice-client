@@ -1,4 +1,4 @@
-import {AudioConstraints, AudioProcessorConfig} from "../services/audio/audio";
+import {AudioConstraints, AudioProcessorConfig} from "../../shared/types/index";
 
 export enum LogLevel {
   NONE = 0,

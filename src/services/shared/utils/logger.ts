@@ -1,5 +1,5 @@
 import {LogLevel, LoggingConfig} from "../types/config";
-import {EventEmitter} from "../services/emitter/event-emitter";
+import {EventEmitter} from "../../emitter/event-emitter";
 import {EventType} from "../types/events";
 
 export class Logger {

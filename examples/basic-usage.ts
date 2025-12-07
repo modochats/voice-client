@@ -1,4 +1,4 @@
-import {ModoVoiceClient, EventType, LogLevel} from "../src";
+import {ModoVoiceClient, EventType, LogLevel, AudioService, EventEmitter, AudioState} from "../src";
 
 async function main() {
   const client = new ModoVoiceClient({
@@ -65,5 +65,4 @@ async function main() {
     process.exit(1);
   }
 }
-
 main();

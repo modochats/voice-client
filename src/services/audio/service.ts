@@ -1,14 +1,14 @@
 import {EventEmitter} from "../emitter/event-emitter";
 import {AudioState} from "./audio-state";
-import {AudioConfig} from "../../types/config";
+import {AudioConfig} from "../shared/types/config";
 import {AudioPlaybackState, RecordingState, AudioDeviceInfo, VoiceActivityMetrics} from "./audio";
-import {EventType} from "../../types/events";
-import {float32ToPcm16, pcm16ToBase64} from "./file-processing";
+import {EventType} from "../shared/types/events";
+import {AudioCollector} from "./audio-processor";
 export class AudioService {
   private eventEmitter: EventEmitter;
   private audioState: AudioState;
   private config: AudioConfig;
-  private sendAudioToServer: ((data: Uint8Array) => void) | null = null;
+  private sendAudioToServer: ((data: string) => void) | null = null;
   volume: number = 0;
   private audioContext: AudioContext | null = null;
   private mediaStream: MediaStream | null = null;
@@ -17,13 +17,16 @@ export class AudioService {
   private playbackRetryTimer: NodeJS.Timeout | null = null;
   private micResumeTimeout: NodeJS.Timeout | null = null;
 
+  audioCollector: AudioCollector;
+
   constructor(eventEmitter: EventEmitter, audioState: AudioState, config: AudioConfig) {
     this.eventEmitter = eventEmitter;
     this.audioState = audioState;
     this.config = config;
+    this.audioCollector = new AudioCollector();
   }
 
-  setSendAudioCallback(callback: (data: Uint8Array) => void): void {
+  setSendAudioCallback(callback: (data: string) => void): void {
     this.sendAudioToServer = callback;
   }
 
@@ -42,7 +45,7 @@ export class AudioService {
       // Create AudioContext WITHOUT specifying sample rate - let it use device's native rate
       // This ensures AudioContext sample rate matches the media stream
       this.audioContext = new AudioContext({sampleRate: 16000});
-      await this.audioContext.audioWorklet.addModule(this.config.processorPath);
+      // await this.audioContext.audioWorklet.addModule(this.config.processorPath);
       await this.audioContext.audioWorklet.addModule("https://moderndata.s3.ir-thr-at1.arvanstorage.ir/audio.js");
       let microphone = this.audioContext.createMediaStreamSource(this.mediaStream);
 
@@ -58,28 +61,15 @@ export class AudioService {
       this.audioContext.resume();
 
       try {
-        const sourceNode = this.audioContext.createMediaStreamSource(this.mediaStream);
-        sourceNode.connect(this.audioContext.createGain());
-
-        const bufferSize = 256;
-        const scriptProcessorNode = this.audioContext.createScriptProcessor(bufferSize, 1, 1);
-        scriptProcessorNode.onaudioprocess = audioProcessingEvent => {
-          const inputBuffer = audioProcessingEvent.inputBuffer;
-          const floatSamples = inputBuffer.getChannelData(0);
-
-          // Convert to PCM 16-bit and send base64 encoded data
-          const pcm16 = float32ToPcm16(floatSamples);
-          const base64Audio = pcm16ToBase64(pcm16);
-          // @ts-ignore
-          if (this.volume >= 2) this.sendAudioToServer(base64Audio);
-        };
-        sourceNode.connect(scriptProcessorNode);
-        scriptProcessorNode.connect(this.audioContext.destination);
+        this.audioCollector.init({
+          audioContext: this.audioContext,
+          mediaStream: this.mediaStream,
+          tempChunkCreateCallback: this.sendAudioToServer!,
+          getVolume: () => this.volume
+        });
       } catch (err) {
-        console.log(err);
+        console.error("Generator: Error starting recording:", err);
       }
-
-      // await this.setupAudioWorklet();
 
       this.audioState.setRecordingState(RecordingState.RECORDING);
     } catch (error) {
@@ -263,5 +253,7 @@ export class AudioService {
     }
 
     this.audioState.reset();
+
+    this.audioCollector.reset();
   }
 }

@@ -2,13 +2,13 @@ import {EventEmitter} from "./services/emitter/event-emitter";
 import {WebSocketService} from "./services/web-socket/service";
 import {AudioService} from "./services/audio/service";
 import {AudioState} from "./services/audio/audio-state";
-import {Logger, createLogger} from "./utils/logger";
-import {validateConfig} from "./utils/validators";
-import {ModoVoiceConfig, DEFAULT_CONFIG, LogLevel} from "./types/config";
-import {EventType, EventListener, ModoVoiceEvent} from "./types/events";
+import {Logger, createLogger} from "./services/shared/utils/logger";
+import {validateConfig} from "./services/shared/utils/validators";
+import {ModoVoiceConfig, DEFAULT_CONFIG, LogLevel} from "./services/shared/types/config";
+import {EventType, EventListener, ModoVoiceEvent} from "./services/shared/types/events";
 import {AudioDeviceInfo} from "./services/audio/audio";
 import {ConnectionMetrics} from "./services/web-socket/websocket";
-import {ConnectionState} from "./models";
+import {ConnectionState} from "./services/shared/models";
 
 export class ModoVoiceClient {
   private config: Required<ModoVoiceConfig>;
@@ -47,10 +47,10 @@ export class ModoVoiceClient {
     this.audioService = new AudioService(this.eventEmitter, this.audioState, this.config.audio as any);
 
     // Set up microphone audio transmission to WebSocket
-    this.audioService.setSendAudioCallback((audioData: Uint8Array) => {
+    this.audioService.setSendAudioCallback(base64Audio => {
       if (this.webSocketService.isConnected()) {
         try {
-          this.webSocketService.send(audioData);
+          this.webSocketService.send(base64Audio);
         } catch (error) {
           this.logger.error("Failed to send audio data", "ModoVoiceClient", error);
         }
@@ -127,7 +127,6 @@ export class ModoVoiceClient {
 
     try {
       this.logger.info("Disconnecting...", "ModoVoiceClient");
-
       this.webSocketService.disconnect();
       await this.audioService.cleanup();
 

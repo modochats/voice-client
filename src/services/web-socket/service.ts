@@ -1,8 +1,7 @@
 import {EventEmitter} from "../emitter/event-emitter";
-import {ConnectionState as ConnState} from "../../models";
+import {ConnectionState as ConnState} from "../shared/models";
 import {WebSocketConfig, IncomingMessage, WebSocketMessageType, ConnectionState as State} from "./websocket";
-import {EventType} from "../../types/events";
-import {AudioCollector} from "../audio/audio-collector";
+import {EventType} from "../shared/types/events";
 export class WebSocketService {
   private ws: WebSocket | null = null;
   private config: WebSocketConfig;
@@ -13,13 +12,11 @@ export class WebSocketService {
   private reconnectAttempt: number = 0;
   private intentionalDisconnect: boolean = false;
   private turn: "User" | "Ai" = "Ai";
-  private audioCollector: AudioCollector;
 
   constructor(config: WebSocketConfig, eventEmitter: EventEmitter, connectionState: ConnState) {
     this.config = config;
     this.eventEmitter = eventEmitter;
     this.connectionState = connectionState;
-    this.audioCollector = new AudioCollector();
   }
 
   async connect(): Promise<void> {
@@ -219,28 +216,20 @@ export class WebSocketService {
     this.connectionState.setReconnectTimer(timer);
   }
 
-  send(data: Uint8Array | string): void {
+  send(data: string): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       throw new Error("WebSocket is not connected");
     }
 
     this.ws.send(data);
     this.connectionState.incrementMessagesSent();
-
-    if (data instanceof Uint8Array) {
-      this.audioCollector.addChunk(data);
-      this.connectionState.addBytesSent(data.byteLength);
-    } else {
-      const byteSize = Math.ceil(data.length * 0.75); // Base64 is 4/3 the size of binary
-      this.audioCollector.addChunk(data);
-      this.connectionState.addBytesSent(byteSize);
-    }
+    const byteSize = Math.ceil(data.length * 0.75); // Base64 is 4/3 the size of binary
+    this.connectionState.addBytesSent(byteSize);
   }
 
   disconnect(): void {
     if (!this.ws) return;
 
-    this.audioCollector.download();
     // Mark this as an intentional disconnect to prevent auto-reconnect
     this.intentionalDisconnect = true;
 
