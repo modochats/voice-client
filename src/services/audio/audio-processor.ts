@@ -42,7 +42,6 @@ class AudioCollector {
 
       this.scriptProcessorNode.onaudioprocess = event => {
         const volume = this.getVolume();
-        console.log("Current volume:", volume);
         // if (volume < 1) return;
         this.addChunk(event);
         if (this.chunkAddCounter >= 3) {
@@ -134,7 +133,7 @@ class AudioCollector {
           }
 
           const base64String = arrayBufferToBase64(outputBuffer.buffer);
-          console.log(processAll ? "ALL :" : "PARTIAL :", base64String);
+          // console.log(processAll ? "ALL :" : "PARTIAL :", base64String);
           resolve(base64String);
           if (!processAll && this.tempChunkCreateCallback) this.tempChunkCreateCallback(base64String);
         } catch (err) {
