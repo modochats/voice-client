@@ -1,9 +1,9 @@
 import {EventEmitter} from "../emitter/event-emitter";
-import {AudioState} from "./audio-state";
+import {AudioState} from "./input-processor";
 import {AudioConfig} from "../shared/types/config";
 import {AudioPlaybackState, RecordingState, AudioDeviceInfo, VoiceActivityMetrics} from "./audio";
 import {EventType} from "../shared/types/events";
-import {AudioCollector} from "./audio-processor";
+import {AudioOutputProcessor} from "./output-processor";
 export class AudioService {
   private eventEmitter: EventEmitter;
   private audioState: AudioState;
@@ -17,13 +17,13 @@ export class AudioService {
   private playbackRetryTimer: NodeJS.Timeout | null = null;
   private micResumeTimeout: NodeJS.Timeout | null = null;
 
-  audioCollector: AudioCollector;
+  outputProcessor: AudioOutputProcessor;
 
   constructor(eventEmitter: EventEmitter, audioState: AudioState, config: AudioConfig) {
     this.eventEmitter = eventEmitter;
     this.audioState = audioState;
     this.config = config;
-    this.audioCollector = new AudioCollector();
+    this.outputProcessor = new AudioOutputProcessor();
   }
 
   setSendAudioCallback(callback: (data: string) => void): void {
@@ -61,7 +61,7 @@ export class AudioService {
       this.audioContext.resume();
 
       try {
-        this.audioCollector.init({
+        this.outputProcessor.init({
           audioContext: this.audioContext,
           mediaStream: this.mediaStream,
           tempChunkCreateCallback: this.sendAudioToServer!,
@@ -101,7 +101,7 @@ export class AudioService {
     const minChunks = this.audioState.isPlaying() ? this.config.targetChunks * 0.75 : this.config.targetChunks;
 
     const shouldStart = bufferInfo.totalBytes >= minSize || bufferInfo.chunks >= minChunks || (this.audioState.isStreamComplete() && bufferInfo.totalBytes > 0);
-
+    console.log(shouldStart);
     if (shouldStart) {
       await this.playNextSegment();
     } else if (!this.playbackRetryTimer) {
@@ -254,6 +254,6 @@ export class AudioService {
 
     this.audioState.reset();
 
-    this.audioCollector.reset();
+    this.outputProcessor.reset();
   }
 }

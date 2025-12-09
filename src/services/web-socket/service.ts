@@ -109,7 +109,6 @@ export class WebSocketService {
 
   private async handleMessage(event: MessageEvent): Promise<void> {
     this.connectionState.incrementMessagesReceived();
-
     if (event.data instanceof ArrayBuffer) {
       this.connectionState.addBytesReceived(event.data.byteLength);
       await this.handleBinaryMessage(event.data);

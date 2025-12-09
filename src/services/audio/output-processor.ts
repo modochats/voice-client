@@ -1,4 +1,4 @@
-class AudioCollector {
+class AudioOutputProcessor {
   audioContext: AudioContext | null = null;
   mediaStream: MediaStream | null = null;
   mediaStreamSource: MediaStreamAudioSourceNode | null = null;
@@ -153,4 +153,4 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   }
   return window.btoa(binary);
 }
-export {AudioCollector};
+export {AudioOutputProcessor};

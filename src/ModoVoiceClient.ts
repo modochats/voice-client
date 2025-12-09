@@ -1,7 +1,7 @@
 import {EventEmitter} from "./services/emitter/event-emitter";
 import {WebSocketService} from "./services/web-socket/service";
 import {AudioService} from "./services/audio/service";
-import {AudioState} from "./services/audio/audio-state";
+import {AudioState} from "./services/audio/input-processor";
 import {Logger, createLogger} from "./services/shared/utils/logger";
 import {validateConfig} from "./services/shared/utils/validators";
 import {ModoVoiceConfig, DEFAULT_CONFIG, LogLevel} from "./services/shared/types/config";
