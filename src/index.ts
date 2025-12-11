@@ -9,5 +9,8 @@ export {ConnectionState as WebSocketConnectionState} from "./services/web-socket
 export * from "./services/shared/models";
 export * from "./services";
 export * from "./services/shared/utils/index";
+export {ConnectionState} from "./services/web-socket/connection-state";
+
+export {AudioInputProcessor} from "./services/audio/input-processor";
 
 export {ModoVoiceClient as default} from "./ModoVoiceClient";

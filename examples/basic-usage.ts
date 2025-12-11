@@ -1,4 +1,4 @@
-import {ModoVoiceClient, EventType, LogLevel, AudioService, EventEmitter, AudioState} from "../src";
+import {ModoVoiceClient, EventType, LogLevel, AudioService, EventEmitter, AudioInputProcessor} from "../src";
 
 async function main() {
   const client = new ModoVoiceClient({

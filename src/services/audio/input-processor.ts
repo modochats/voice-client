@@ -1,6 +1,7 @@
+import {AudioConfig} from "../shared/types";
 import {AudioPlaybackState, RecordingState, AudioBufferInfo, PlaybackMetrics, RecordingMetrics} from "./audio";
 
-export class AudioState {
+export class AudioInputProcessor {
   private playbackState: AudioPlaybackState = AudioPlaybackState.IDLE;
   private recordingState: RecordingState = RecordingState.IDLE;
 
@@ -15,7 +16,12 @@ export class AudioState {
 
   private totalBytesReceived: number = 0;
   private totalBytesSent: number = 0;
+  private config: AudioConfig;
+  private playbackRetryTimer: NodeJS.Timeout | null = null;
 
+  constructor(config: AudioConfig) {
+    this.config = config;
+  }
   getPlaybackState(): AudioPlaybackState {
     return this.playbackState;
   }
@@ -138,6 +144,9 @@ export class AudioState {
   }
 
   reset(): void {
+    if (this.playbackRetryTimer) {
+      clearTimeout(this.playbackRetryTimer);
+    }
     this.playbackState = AudioPlaybackState.IDLE;
     this.recordingState = RecordingState.IDLE;
     this.audioQueue = [];
@@ -157,11 +166,105 @@ export class AudioState {
     this.isStreamingComplete = false;
     this.currentAudioElement = null;
     this.playbackStartTime = 0;
+    if (this.playbackRetryTimer) {
+      clearTimeout(this.playbackRetryTimer);
+    }
   }
 
   resetRecording(): void {
     this.recordingState = RecordingState.IDLE;
     this.recordingStartTime = 0;
     this.totalBytesSent = 0;
+  }
+  async handleIncomingAudioChunk(unit8Array: Uint8Array): Promise<void> {
+    this.addToBuffer(unit8Array);
+    if (!this.isPlaying()) {
+      try {
+        await this.attemptPlayback();
+      } catch (error) {
+        console.error("Error during playback attempt:", error);
+      }
+    }
+  }
+
+  private async attemptPlayback(): Promise<void> {
+    const bufferInfo = this.getBufferInfo();
+    const minSize = this.isPlaying() ? this.config.minBufferSize * 0.75 : this.config.minBufferSize;
+    const minChunks = this.isPlaying() ? this.config.targetChunks * 0.75 : this.config.targetChunks;
+
+    const shouldStart = bufferInfo.totalBytes >= minSize || bufferInfo.chunks >= minChunks || (this.isStreamComplete() && bufferInfo.totalBytes > 0);
+    if (shouldStart) {
+      await this.playNextSegment();
+    } else if (!this.playbackRetryTimer) {
+      this.playbackRetryTimer = setTimeout(() => {
+        this.playbackRetryTimer = null;
+        this.attemptPlayback();
+      }, this.config.playbackRetryInterval);
+    }
+  }
+
+  private async playNextSegment(): Promise<void> {
+    if (this.playbackRetryTimer) {
+      clearTimeout(this.playbackRetryTimer);
+      this.playbackRetryTimer = null;
+    }
+
+    const buffer = this.getBuffer();
+    if (buffer.length === 0) {
+      if (this.isStreamComplete()) {
+        await this.completePlayback();
+      }
+      return;
+    }
+
+    const combined = this.combineBuffers(buffer);
+    this.clearBuffer();
+
+    const blob = new Blob([combined.buffer as ArrayBuffer], {type: "audio/mpeg"});
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+
+    this.setCurrentAudioElement(audio);
+    this.setPlaybackState(AudioPlaybackState.PLAYING);
+
+    audio.onended = () => {
+      URL.revokeObjectURL(url);
+      Promise.resolve().then(() => this.playNextSegment());
+    };
+
+    audio.onerror = error => {
+      URL.revokeObjectURL(url);
+    };
+
+    try {
+      await audio.play();
+    } catch (error) {
+      console.error("Failed to start audio playback:", error);
+    }
+  }
+
+  private combineBuffers(buffers: Uint8Array[]): Uint8Array {
+    const totalLength = buffers.reduce((sum, buf) => sum + buf.byteLength, 0);
+    const result = new Uint8Array(totalLength);
+    let offset = 0;
+
+    for (const buffer of buffers) {
+      result.set(buffer, offset);
+      offset += buffer.byteLength;
+    }
+
+    return result;
+  }
+
+  async setStreamComplete(): Promise<void> {
+    this.setStreamingComplete(true);
+
+    if (this.getBufferSize() > 0 && !this.isPlaying()) {
+      await this.playNextSegment();
+    }
+  }
+  private async completePlayback(): Promise<void> {
+    this.setPlaybackState(AudioPlaybackState.COMPLETED);
+    // await this.resumeMicrophone();
   }
 }

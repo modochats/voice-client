@@ -1,7 +1,6 @@
 import {EventEmitter} from "./services/emitter/event-emitter";
 import {WebSocketService} from "./services/web-socket/service";
 import {AudioService} from "./services/audio/service";
-import {AudioState} from "./services/audio/input-processor";
 import {Logger, createLogger} from "./services/shared/utils/logger";
 import {validateConfig} from "./services/shared/utils/validators";
 import {ModoVoiceConfig, DEFAULT_CONFIG, LogLevel} from "./services/shared/types/config";
@@ -14,7 +13,6 @@ export class ModoVoiceClient {
   private config: Required<ModoVoiceConfig>;
 
   private eventEmitter: EventEmitter;
-  private audioState: AudioState;
   private connectionState: ConnectionState;
   private logger: Logger;
 
@@ -29,7 +27,6 @@ export class ModoVoiceClient {
     this.config = this.mergeWithDefaults(config);
 
     this.eventEmitter = new EventEmitter();
-    this.audioState = new AudioState();
     this.connectionState = new ConnectionState();
     this.logger = createLogger(this.config.logging as any, this.eventEmitter);
 
@@ -44,7 +41,7 @@ export class ModoVoiceClient {
       this.connectionState
     );
 
-    this.audioService = new AudioService(this.eventEmitter, this.audioState, this.config.audio as any);
+    this.audioService = new AudioService(this.eventEmitter, this.config.audio as any);
 
     // Set up microphone audio transmission to WebSocket
     this.audioService.setSendAudioCallback(base64Audio => {
@@ -76,7 +73,7 @@ export class ModoVoiceClient {
     // Route audio chunks from WebSocket to AudioService for playback
     this.eventEmitter.on(EventType.AI_PLAYBACK_CHUNK, async event => {
       if ("data" in event && event.data instanceof Uint8Array) {
-        await this.audioService.handleIncomingAudioChunk(event.data.buffer as ArrayBuffer);
+        await this.audioService.handleIncomingAudioChunk(event.data);
         this.logger.debug(`Received audio chunk: ${event.data.byteLength} bytes`, "ModoVoiceClient");
       }
     });

@@ -1,27 +1,25 @@
 import {EventEmitter} from "../emitter/event-emitter";
-import {AudioState} from "./input-processor";
+import {AudioInputProcessor} from "./input-processor";
 import {AudioConfig} from "../shared/types/config";
-import {AudioPlaybackState, RecordingState, AudioDeviceInfo, VoiceActivityMetrics} from "./audio";
+import {RecordingState, AudioDeviceInfo} from "./audio";
 import {EventType} from "../shared/types/events";
 import {AudioOutputProcessor} from "./output-processor";
 export class AudioService {
   private eventEmitter: EventEmitter;
-  private audioState: AudioState;
+  private inputProcessor: AudioInputProcessor;
   private config: AudioConfig;
   private sendAudioToServer: ((data: string) => void) | null = null;
   volume: number = 0;
   private audioContext: AudioContext | null = null;
   private mediaStream: MediaStream | null = null;
   private audioWorkletNode: AudioWorkletNode | null = null;
-
-  private playbackRetryTimer: NodeJS.Timeout | null = null;
   private micResumeTimeout: NodeJS.Timeout | null = null;
 
   outputProcessor: AudioOutputProcessor;
 
-  constructor(eventEmitter: EventEmitter, audioState: AudioState, config: AudioConfig) {
+  constructor(eventEmitter: EventEmitter, config: AudioConfig) {
     this.eventEmitter = eventEmitter;
-    this.audioState = audioState;
+    this.inputProcessor = new AudioInputProcessor(config);
     this.config = config;
     this.outputProcessor = new AudioOutputProcessor();
   }
@@ -71,7 +69,7 @@ export class AudioService {
         console.error("Generator: Error starting recording:", err);
       }
 
-      this.audioState.setRecordingState(RecordingState.RECORDING);
+      this.inputProcessor.setRecordingState(RecordingState.RECORDING);
     } catch (error) {
       await this.eventEmitter.emit({
         type: EventType.ERROR,
@@ -83,99 +81,8 @@ export class AudioService {
     }
   }
 
-  async handleIncomingAudioChunk(chunk: ArrayBuffer): Promise<void> {
-    const uint8Array = new Uint8Array(chunk);
-    this.audioState.addToBuffer(uint8Array);
-    if (!this.audioState.isPlaying()) {
-      try {
-        await this.attemptPlayback();
-      } catch (error) {
-        console.error("Error during playback attempt:", error);
-      }
-    }
-  }
-
-  private async attemptPlayback(): Promise<void> {
-    const bufferInfo = this.audioState.getBufferInfo();
-    const minSize = this.audioState.isPlaying() ? this.config.minBufferSize * 0.75 : this.config.minBufferSize;
-    const minChunks = this.audioState.isPlaying() ? this.config.targetChunks * 0.75 : this.config.targetChunks;
-
-    const shouldStart = bufferInfo.totalBytes >= minSize || bufferInfo.chunks >= minChunks || (this.audioState.isStreamComplete() && bufferInfo.totalBytes > 0);
-    console.log(shouldStart);
-    if (shouldStart) {
-      await this.playNextSegment();
-    } else if (!this.playbackRetryTimer) {
-      this.playbackRetryTimer = setTimeout(() => {
-        this.playbackRetryTimer = null;
-        this.attemptPlayback();
-      }, this.config.playbackRetryInterval);
-    }
-  }
-
-  private async playNextSegment(): Promise<void> {
-    if (this.playbackRetryTimer) {
-      clearTimeout(this.playbackRetryTimer);
-      this.playbackRetryTimer = null;
-    }
-
-    const buffer = this.audioState.getBuffer();
-    if (buffer.length === 0) {
-      if (this.audioState.isStreamComplete()) {
-        await this.completePlayback();
-      }
-      return;
-    }
-
-    const combined = this.combineBuffers(buffer);
-    this.audioState.clearBuffer();
-
-    const blob = new Blob([combined.buffer as ArrayBuffer], {type: "audio/mpeg"});
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-
-    this.audioState.setCurrentAudioElement(audio);
-    this.audioState.setPlaybackState(AudioPlaybackState.PLAYING);
-
-    audio.onended = () => {
-      URL.revokeObjectURL(url);
-      Promise.resolve().then(() => this.playNextSegment());
-    };
-
-    audio.onerror = error => {
-      URL.revokeObjectURL(url);
-    };
-
-    try {
-      await audio.play();
-    } catch (error) {
-      console.error("Failed to start audio playback:", error);
-    }
-  }
-
-  private combineBuffers(buffers: Uint8Array[]): Uint8Array {
-    const totalLength = buffers.reduce((sum, buf) => sum + buf.byteLength, 0);
-    const result = new Uint8Array(totalLength);
-    let offset = 0;
-
-    for (const buffer of buffers) {
-      result.set(buffer, offset);
-      offset += buffer.byteLength;
-    }
-
-    return result;
-  }
-
-  async setStreamComplete(): Promise<void> {
-    this.audioState.setStreamingComplete(true);
-
-    if (this.audioState.getBufferSize() > 0 && !this.audioState.isPlaying()) {
-      await this.playNextSegment();
-    }
-  }
-
-  private async completePlayback(): Promise<void> {
-    this.audioState.setPlaybackState(AudioPlaybackState.COMPLETED);
-    await this.resumeMicrophone();
+  async handleIncomingAudioChunk(unit8Array: Uint8Array): Promise<void> {
+    this.inputProcessor.handleIncomingAudioChunk(unit8Array);
   }
 
   async pauseMicrophone(): Promise<void> {
@@ -223,15 +130,11 @@ export class AudioService {
   }
 
   async cleanup(): Promise<void> {
-    if (this.playbackRetryTimer) {
-      clearTimeout(this.playbackRetryTimer);
-    }
-
     if (this.micResumeTimeout) {
       clearTimeout(this.micResumeTimeout);
     }
 
-    const currentElement = this.audioState.getCurrentAudioElement();
+    const currentElement = this.inputProcessor.getCurrentAudioElement();
     if (currentElement) {
       currentElement.pause();
       currentElement.src = "";
@@ -252,7 +155,7 @@ export class AudioService {
       this.audioContext = null;
     }
 
-    this.audioState.reset();
+    this.inputProcessor.reset();
 
     this.outputProcessor.reset();
   }
