@@ -40,10 +40,7 @@ export class AudioService {
 
       this.mediaStream = stream;
 
-      // Create AudioContext WITHOUT specifying sample rate - let it use device's native rate
-      // This ensures AudioContext sample rate matches the media stream
-      this.audioContext = new AudioContext({sampleRate: 16000});
-      // await this.audioContext.audioWorklet.addModule(this.config.processorPath);
+      this.audioContext = new AudioContext({sampleRate: this.config.constraints.sampleRate});
       await this.audioContext.audioWorklet.addModule("https://moderndata.s3.ir-thr-at1.arvanstorage.ir/audio.js");
       let microphone = this.audioContext.createMediaStreamSource(this.mediaStream);
 

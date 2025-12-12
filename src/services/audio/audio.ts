@@ -1,17 +1,17 @@
 export enum AudioPlaybackState {
-  IDLE = 'idle',
-  BUFFERING = 'buffering',
-  PLAYING = 'playing',
-  PAUSED = 'paused',
-  COMPLETED = 'completed',
-  ERROR = 'error'
+  IDLE = "idle",
+  BUFFERING = "buffering",
+  PLAYING = "playing",
+  PAUSED = "paused",
+  COMPLETED = "completed",
+  ERROR = "error"
 }
 
 export enum RecordingState {
-  IDLE = 'idle',
-  RECORDING = 'recording',
-  PAUSED = 'paused',
-  STOPPED = 'stopped'
+  IDLE = "idle",
+  RECORDING = "recording",
+  PAUSED = "paused",
+  STOPPED = "stopped"
 }
 
 export interface AudioConstraints {
@@ -51,14 +51,6 @@ export interface VoiceActivityMetrics {
   threshold: number;
 }
 
-export interface AudioProcessorConfig {
-  voiceThreshold: number;
-  silenceThreshold: number;
-  minSilenceFrames: number;
-  maxPreRollBuffers: number;
-  sampleRate: number;
-}
-
 export interface PlaybackMetrics {
   currentTime: number;
   duration: number;
@@ -74,4 +66,3 @@ export interface RecordingMetrics {
   sampleRate: number;
   channelCount: number;
 }
-

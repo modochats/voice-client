@@ -79,7 +79,7 @@ export class AudioInputProcessor {
     return {
       chunks: this.audioBuffer.length,
       totalBytes: this.audioBufferSize,
-      duration: this.audioBufferSize / (16000 * 2),
+      duration: this.audioBufferSize / (this.config.constraints.sampleRate * 2),
       isStreaming: !this.isStreamingComplete
     };
   }
@@ -126,7 +126,7 @@ export class AudioInputProcessor {
       startTime: this.recordingStartTime,
       duration: this.recordingStartTime ? Date.now() - this.recordingStartTime : 0,
       totalBytes: this.totalBytesSent,
-      sampleRate: 16000,
+      sampleRate: this.config.constraints.sampleRate,
       channelCount: 1
     };
   }

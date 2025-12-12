@@ -12,7 +12,7 @@
 - 🎯 **Type-Safe** - Full TypeScript support with comprehensive type definitions
 - 📦 **Event-Driven** - Rich event system for all connection, audio, and voice events
 - 🔌 **Easy Integration** - Simple API, works in browser and Node.js
-- 🎚️ **Configurable** - Extensive configuration options for audio, connection, and logging
+- 🎚️ **Configurable** - Extensive configuration options for audio, connection
 - 📊 **Metrics & Monitoring** - Built-in connection and voice metrics
 
 ## Installation
@@ -156,26 +156,6 @@ const client = new ModoVoiceClient({
     pongTimeout: 5000,
     connectionTimeout: 10000,
     binaryType: "arraybuffer"
-  },
-
-  logging: {
-    level: LogLevel.INFO,
-    enableConsole: true,
-    enableEvents: true,
-    includeTimestamp: true,
-    includeContext: true
-  },
-
-  features: {
-    enableVAD: true,
-    enableNoiseReduction: true,
-    enableEchoCancellation: true,
-    enableAutoGainControl: true,
-    enableOnHoldAudio: true,
-    enablePreRollBuffer: true,
-    enableMetrics: true,
-    metricsInterval: 1000,
-    enableDebugLogs: false
   }
 });
 ```
@@ -206,16 +186,6 @@ const client = new ModoVoiceClient({
 | `reconnectBackoffMultiplier` | number  | 1.5     | Backoff multiplier for reconnects |
 | `pingInterval`               | number  | 30000   | WebSocket ping interval (ms)      |
 | `connectionTimeout`          | number  | 10000   | Connection timeout (ms)           |
-
-#### Logging Configuration
-
-| Option             | Type     | Default | Description                                    |
-| ------------------ | -------- | ------- | ---------------------------------------------- |
-| `level`            | LogLevel | INFO    | Logging level (NONE, ERROR, WARN, INFO, DEBUG) |
-| `enableConsole`    | boolean  | true    | Enable console logging                         |
-| `enableEvents`     | boolean  | true    | Emit log events                                |
-| `includeTimestamp` | boolean  | true    | Include timestamps in logs                     |
-| `includeContext`   | boolean  | true    | Include context in logs                        |
 
 ## Events
 
@@ -283,7 +253,6 @@ EventType.DEBUG;
 - `isConnected(): boolean` - Check connection status
 - `getAvailableDevices(): Promise<AudioDeviceInfo[]>` - Get available audio devices
 - `getConnectionMetrics(): ConnectionMetrics` - Get connection statistics
-- `setLogLevel(level: LogLevel): void` - Set logging level
 - `getConfig(): Required<ModoVoiceConfig>` - Get current configuration
 - `updateConfig(updates: Partial<ModoVoiceConfig>): void` - Update configuration
 
@@ -358,10 +327,6 @@ Get connection statistics.
 ##### getAvailableDevices(): Promise<AudioDeviceInfo[]>
 
 Get list of available audio input devices.
-
-##### setLogLevel(level: LogLevel): void
-
-Change logging level at runtime.
 
 ##### getConfig(): ModoVoiceConfig
 

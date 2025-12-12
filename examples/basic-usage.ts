@@ -4,14 +4,7 @@ async function main() {
   const client = new ModoVoiceClient({
     apiBase: "https://live.modochats.com",
     chatbotUuid: "your-chatbot-uuid-here",
-    userUniqueId: "user-123",
-    logging: {
-      level: LogLevel.DEBUG,
-      enableConsole: true,
-      enableEvents: false,
-      includeTimestamp: true,
-      includeContext: true
-    }
+    userUniqueId: "user-123"
   });
 
   client.on(EventType.CONNECTED, event => {

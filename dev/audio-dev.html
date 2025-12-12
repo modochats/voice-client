@@ -136,18 +136,12 @@
       const audioState = new AudioState();
 
       const audioService = new AudioService(eventEmitter, audioState, {
-        processorPath: "/dist/audio-processor.js",
         constraints: {
           sampleRate: 16000,
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true
-        },
-        processor: {
-          voiceThreshold: 0.3,
-          silenceThreshold: 0.15,
-          minSilenceFrames: 10
         },
         playbackRetryInterval: 100,
         resumeDelay: 100,

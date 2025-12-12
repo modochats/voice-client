@@ -1,7 +1,7 @@
 import {EventEmitter} from "../emitter/event-emitter";
-import {ConnectionState as ConnState} from "../shared/models";
 import {WebSocketConfig, IncomingMessage, WebSocketMessageType, ConnectionState as State} from "./websocket";
 import {EventType} from "../shared/types/events";
+import {ConnectionState as ConnState} from "./connection-state";
 export class WebSocketService {
   private ws: WebSocket | null = null;
   private config: WebSocketConfig;

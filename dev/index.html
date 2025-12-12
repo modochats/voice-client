@@ -598,15 +598,10 @@
 
           client = new ModoVoiceClient({
             apiBase: "https://live.modochats.com",
+            // apiBase: "http://172.18.6.12:8000",
             chatbotUuid,
             userUniqueId,
-            logging: {
-              level: LogLevel.DEBUG,
-              enableEvents: true
-            },
-            audio: {
-              processorPath: "https://modochats.s3.ir-thr-at1.arvanstorage.ir/audio-processor.js"
-            }
+  
           });
 
           client.on(EventType.CONNECTED, event => {

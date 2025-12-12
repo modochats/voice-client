@@ -14,13 +14,6 @@ async function main() {
         noiseSuppression: true,
         autoGainControl: true
       },
-      processor: {
-        voiceThreshold: 0.3,
-        silenceThreshold: 0.15,
-        minSilenceFrames: 10,
-        maxPreRollBuffers: 5,
-        sampleRate: 16000
-      },
       minBufferSize: 50000,
       targetChunks: 25,
       resumeDelay: 300
@@ -34,31 +27,6 @@ async function main() {
       maxReconnectDelay: 60000,
       pingInterval: 20000,
       connectionTimeout: 15000
-    },
-
-    logging: {
-      level: LogLevel.DEBUG,
-      enableConsole: true,
-      enableEvents: true,
-      includeTimestamp: true,
-      includeContext: true,
-      customLogger: (level, message, context, data) => {
-        const timestamp = new Date().toISOString();
-        const levelStr = ["NONE", "ERROR", "WARN", "INFO", "DEBUG"][level];
-        console.log(`[${timestamp}] [${levelStr}] [${context || "SDK"}] ${message}`, data || "");
-      }
-    },
-
-    features: {
-      enableVAD: true,
-      enableNoiseReduction: true,
-      enableEchoCancellation: true,
-      enableAutoGainControl: true,
-      enableOnHoldAudio: true,
-      enablePreRollBuffer: true,
-      enableMetrics: true,
-      metricsInterval: 500,
-      enableDebugLogs: true
     }
   });
 
