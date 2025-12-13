@@ -439,7 +439,7 @@
     </div>
 
     <script type="module">
-      import {ModoVoiceClient, EventType, LogLevel} from "../dist/esm/index.js";
+      import {ModoVoiceClient, EventType} from "../dist/esm/index.js";
 
       let client = null;
       let onHoldAudioElement = null;
@@ -597,11 +597,10 @@
           updateStatus("connecting", "Connecting...");
 
           client = new ModoVoiceClient({
-            apiBase: "https://live.modochats.com",
-            // apiBase: "http://172.18.6.12:8000",
+            // apiBase: "https://live.modochats.com",
+            apiBase: "http://172.18.6.12:8000",
             chatbotUuid,
-            userUniqueId,
-  
+            userUniqueId
           });
 
           client.on(EventType.CONNECTED, event => {

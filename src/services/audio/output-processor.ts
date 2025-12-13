@@ -133,7 +133,6 @@ class AudioOutputProcessor {
           }
 
           const base64String = arrayBufferToBase64(outputBuffer.buffer);
-          // console.log(processAll ? "ALL :" : "PARTIAL :", base64String);
           resolve(base64String);
           if (!processAll && this.tempChunkCreateCallback) this.tempChunkCreateCallback(base64String);
         } catch (err) {

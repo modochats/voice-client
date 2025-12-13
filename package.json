@@ -1,6 +1,6 @@
 {
   "name": "@modochats/voice-client",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "TypeScript SDK for Modo Voice Agent - Real-time voice communication with AI",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -19,13 +19,12 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "npm run clean && node build.mjs && npm run build:types",
+    "build": "npm run clean && node build.mjs --watch && npm run build:types",
     "build:types": "tsc --emitDeclarationOnly --declaration --declarationMap --outDir dist/types",
-    "build:watch": "node build.mjs --watch",
     "clean": "npx rimraf dist",
     "prepublishOnly": "npm run build",
     "type-check": "tsc --noEmit",
-    "dev": "yarn build && yarn start",
+    "dev": "concurrently \"npm run build --watch\" \"npm run start\"",
     "start": "live-server --host=0.0.0.0 --port=6996 --open=/dev/index.html"
   },
   "keywords": [
@@ -53,6 +52,7 @@
   "homepage": "https://github.com/modochats/voice-client#readme",
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "concurrently": "^9.2.1",
     "esbuild": "^0.25.12",
     "live-server": "^1.2.2",
     "rimraf": "^6.1.0",

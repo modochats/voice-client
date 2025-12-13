@@ -12,14 +12,14 @@ export class AudioService {
   volume: number = 0;
   private audioContext: AudioContext | null = null;
   private mediaStream: MediaStream | null = null;
-  private audioWorkletNode: AudioWorkletNode | null = null;
   private micResumeTimeout: NodeJS.Timeout | null = null;
+  private micPaused: boolean = false;
 
   outputProcessor: AudioOutputProcessor;
 
   constructor(eventEmitter: EventEmitter, config: AudioConfig) {
     this.eventEmitter = eventEmitter;
-    this.inputProcessor = new AudioInputProcessor(config);
+    this.inputProcessor = new AudioInputProcessor(config, this.eventEmitter);
     this.config = config;
     this.outputProcessor = new AudioOutputProcessor();
   }
@@ -59,7 +59,10 @@ export class AudioService {
         this.outputProcessor.init({
           audioContext: this.audioContext,
           mediaStream: this.mediaStream,
-          tempChunkCreateCallback: this.sendAudioToServer!,
+          tempChunkCreateCallback: data => {
+            if (this.micPaused) return;
+            this.sendAudioToServer?.(data);
+          },
           getVolume: () => this.volume
         });
       } catch (err) {
@@ -83,35 +86,13 @@ export class AudioService {
   }
 
   async pauseMicrophone(): Promise<void> {
-    if (this.audioWorkletNode) {
-      this.audioWorkletNode.port.postMessage({type: "pause"});
-    }
+    this.micPaused = true;
+    this.mediaStream?.getAudioTracks().forEach(track => (track.enabled = false));
   }
 
   async resumeMicrophone(): Promise<void> {
-    if (this.micResumeTimeout) {
-      clearTimeout(this.micResumeTimeout);
-    }
-
-    this.micResumeTimeout = setTimeout(async () => {
-      if (this.audioWorkletNode) {
-        this.audioWorkletNode.port.postMessage({type: "resume"});
-      }
-      this.micResumeTimeout = null;
-    }, this.config.resumeDelay);
-
-    const failsafeTimeout = setTimeout(() => {
-      if (this.audioWorkletNode) {
-        this.audioWorkletNode.port.postMessage({type: "resume"});
-      }
-    }, this.config.failsafeResumeTimeout);
-
-    if (this.micResumeTimeout) {
-      const originalTimeout = this.micResumeTimeout;
-      this.micResumeTimeout = setTimeout(() => {
-        clearTimeout(failsafeTimeout);
-      }, this.config.resumeDelay) as unknown as NodeJS.Timeout;
-    }
+    this.micPaused = false;
+    this.mediaStream?.getAudioTracks().forEach(track => (track.enabled = true));
   }
 
   async getAvailableDevices(): Promise<AudioDeviceInfo[]> {
@@ -135,11 +116,6 @@ export class AudioService {
     if (currentElement) {
       currentElement.pause();
       currentElement.src = "";
-    }
-
-    if (this.audioWorkletNode) {
-      this.audioWorkletNode.disconnect();
-      this.audioWorkletNode = null;
     }
 
     if (this.mediaStream) {

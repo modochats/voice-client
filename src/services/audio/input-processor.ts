@@ -1,4 +1,5 @@
-import {AudioConfig} from "../shared/types";
+import {EventEmitter} from "../emitter/event-emitter";
+import {AudioConfig, EventType} from "../shared/types";
 import {AudioPlaybackState, RecordingState, AudioBufferInfo, PlaybackMetrics, RecordingMetrics} from "./audio";
 
 export class AudioInputProcessor {
@@ -18,9 +19,11 @@ export class AudioInputProcessor {
   private totalBytesSent: number = 0;
   private config: AudioConfig;
   private playbackRetryTimer: NodeJS.Timeout | null = null;
+  private eventEmitter: EventEmitter;
 
-  constructor(config: AudioConfig) {
+  constructor(config: AudioConfig, eventEmitter: EventEmitter) {
     this.config = config;
+    this.eventEmitter = eventEmitter;
   }
   getPlaybackState(): AudioPlaybackState {
     return this.playbackState;
@@ -143,39 +146,6 @@ export class AudioInputProcessor {
     return this.totalBytesSent;
   }
 
-  reset(): void {
-    if (this.playbackRetryTimer) {
-      clearTimeout(this.playbackRetryTimer);
-    }
-    this.playbackState = AudioPlaybackState.IDLE;
-    this.recordingState = RecordingState.IDLE;
-    this.audioQueue = [];
-    this.audioBuffer = [];
-    this.audioBufferSize = 0;
-    this.isStreamingComplete = false;
-    this.currentAudioElement = null;
-    this.recordingStartTime = 0;
-    this.playbackStartTime = 0;
-  }
-
-  resetPlayback(): void {
-    this.playbackState = AudioPlaybackState.IDLE;
-    this.audioQueue = [];
-    this.audioBuffer = [];
-    this.audioBufferSize = 0;
-    this.isStreamingComplete = false;
-    this.currentAudioElement = null;
-    this.playbackStartTime = 0;
-    if (this.playbackRetryTimer) {
-      clearTimeout(this.playbackRetryTimer);
-    }
-  }
-
-  resetRecording(): void {
-    this.recordingState = RecordingState.IDLE;
-    this.recordingStartTime = 0;
-    this.totalBytesSent = 0;
-  }
   async handleIncomingAudioChunk(unit8Array: Uint8Array): Promise<void> {
     this.addToBuffer(unit8Array);
     if (!this.isPlaying()) {
@@ -211,11 +181,16 @@ export class AudioInputProcessor {
 
     const buffer = this.getBuffer();
     if (buffer.length === 0) {
-      if (this.isStreamComplete()) {
-        await this.completePlayback();
-      }
+      // if (this.isStreamComplete()) {
+      await this.completePlayback();
+      // }
       return;
     }
+
+    this.eventEmitter.emit({
+      type: EventType.MICROPHONE_PAUSED,
+      timestamp: Date.now()
+    });
 
     const combined = this.combineBuffers(buffer);
     this.clearBuffer();
@@ -229,7 +204,9 @@ export class AudioInputProcessor {
 
     audio.onended = () => {
       URL.revokeObjectURL(url);
-      Promise.resolve().then(() => this.playNextSegment());
+      Promise.resolve().then(() => {
+        this.playNextSegment();
+      });
     };
 
     audio.onerror = error => {
@@ -264,7 +241,44 @@ export class AudioInputProcessor {
     }
   }
   private async completePlayback(): Promise<void> {
+    this.eventEmitter.emit({
+      type: EventType.MICROPHONE_RESUMED,
+      timestamp: Date.now()
+    });
     this.setPlaybackState(AudioPlaybackState.COMPLETED);
     // await this.resumeMicrophone();
+  }
+
+  reset(): void {
+    if (this.playbackRetryTimer) {
+      clearTimeout(this.playbackRetryTimer);
+    }
+    this.playbackState = AudioPlaybackState.IDLE;
+    this.recordingState = RecordingState.IDLE;
+    this.audioQueue = [];
+    this.audioBuffer = [];
+    this.audioBufferSize = 0;
+    this.isStreamingComplete = false;
+    this.currentAudioElement = null;
+    this.recordingStartTime = 0;
+    this.playbackStartTime = 0;
+  }
+
+  resetPlayback(): void {
+    this.playbackState = AudioPlaybackState.IDLE;
+    this.audioQueue = [];
+    this.audioBuffer = [];
+    this.audioBufferSize = 0;
+    this.isStreamingComplete = false;
+    this.currentAudioElement = null;
+    this.playbackStartTime = 0;
+    if (this.playbackRetryTimer) {
+      clearTimeout(this.playbackRetryTimer);
+    }
+  }
+  resetRecording(): void {
+    this.recordingState = RecordingState.IDLE;
+    this.recordingStartTime = 0;
+    this.totalBytesSent = 0;
   }
 }

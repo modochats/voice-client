@@ -141,17 +141,17 @@ export class WebSocketService {
           this.turn = turn === "ai" ? "Ai" : "User";
 
           // Pause microphone when AI is speaking, resume when user's turn
-          if (turn === "ai") {
-            await this.eventEmitter.emit({
-              type: EventType.MICROPHONE_PAUSED,
-              timestamp: Date.now()
-            });
-          } else if (turn === "user") {
-            await this.eventEmitter.emit({
-              type: EventType.MICROPHONE_RESUMED,
-              timestamp: Date.now()
-            });
-          }
+          // if (turn === "ai") {
+          //   await this.eventEmitter.emit({
+          //     type: EventType.MICROPHONE_PAUSED,
+          //     timestamp: Date.now()
+          //   });
+          // } else if (turn === "user") {
+          //   await this.eventEmitter.emit({
+          //     type: EventType.MICROPHONE_RESUMED,
+          //     timestamp: Date.now()
+          //   });
+          // }
 
           // Emit the turn changed event
           await this.eventEmitter.emit({
