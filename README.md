@@ -47,13 +47,16 @@ const client = new ModoVoiceClient({
 client.on(EventType.CONNECTED, event => {
   console.log("Connected!", event);
 });
-
-client.on(EventType.TURN_CHANGED, event => {
-  console.log("Turn:", event.turn); // 'ai' or 'user'
+client.on(EventType.DISCONNECTED, event => {
+  console.log("Disconnected!", event);
 });
 
-client.on(EventType.AI_PLAYBACK_CHUNK, event => {
-  console.log("Receiving audio chunk:", event.size, "bytes");
+client.on(EventType.MICROPHONE_PAUSED, event => {
+  console.log("Microphone paused:", event);
+});
+
+client.on(EventType.MICROPHONE_RESUMED, event => {
+  console.log("Microphone resumed:", event);
 });
 
 await client.connect();
