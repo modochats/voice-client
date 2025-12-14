@@ -19,12 +19,13 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "npm run clean && node build.mjs --watch && npm run build:types",
+    "build": "npm run clean && node build.mjs && npm run build:types",
+    "build:watch": "npm run clean && node build.mjs --watch && npm run build:types",
     "build:types": "tsc --emitDeclarationOnly --declaration --declarationMap --outDir dist/types",
     "clean": "npx rimraf dist",
     "prepublishOnly": "npm run build",
     "type-check": "tsc --noEmit",
-    "dev": "concurrently \"npm run build --watch\" \"npm run start\"",
+    "dev": "concurrently \"npm run build:watch\" \"npm run start\"",
     "start": "live-server --host=0.0.0.0 --port=6996 --open=/dev/index.html"
   },
   "keywords": [

@@ -130,24 +130,17 @@ const client = new ModoVoiceClient({
       noiseSuppression: true,
       autoGainControl: true
     },
-    processor: {
-      voiceThreshold: 0.25,
-      silenceThreshold: 0.15,
-      minSilenceFrames: 8,
-      maxPreRollBuffers: 5,
-      sampleRate: 16000
-    },
-    minBufferSize: 40000,
-    targetChunks: 20,
+    minBufferSize: 32000,
+    targetChunks: 16,
     chunkSize: 1024,
     playbackRetryInterval: 10,
     playbackRetryMaxAttempts: 50,
-    resumeDelay: 200,
+    resumeDelay: 150,
     failsafeResumeTimeout: 10000
   },
 
   websocket: {
-    reconnect: true,
+    reconnect: false,
     maxReconnectAttempts: 5,
     reconnectDelay: 1000,
     reconnectBackoffMultiplier: 1.5,
@@ -171,21 +164,27 @@ const client = new ModoVoiceClient({
 | `constraints.echoCancellation` | boolean | true    | Enable echo cancellation                    |
 | `constraints.noiseSuppression` | boolean | true    | Enable noise suppression                    |
 | `constraints.autoGainControl`  | boolean | true    | Enable automatic gain control               |
-| `processor.voiceThreshold`     | number  | 0.25    | Voice detection threshold (0-1)             |
-| `processor.silenceThreshold`   | number  | 0.15    | Silence detection threshold (0-1)           |
-| `minBufferSize`                | number  | 40000   | Minimum buffer size before playback (bytes) |
-| `targetChunks`                 | number  | 20      | Target number of chunks to buffer           |
+| `minBufferSize`                | number  | 32000   | Minimum buffer size before playback (bytes) |
+| `targetChunks`                 | number  | 16      | Target number of chunks to buffer           |
+| `chunkSize`                    | number  | 1024    | Size of each audio chunk (bytes)            |
+| `playbackRetryInterval`        | number  | 10      | Retry interval for playback (ms)            |
+| `playbackRetryMaxAttempts`     | number  | 50      | Maximum playback retry attempts             |
+| `resumeDelay`                  | number  | 150     | Delay before resuming playback (ms)         |
+| `failsafeResumeTimeout`        | number  | 10000   | Failsafe resume timeout (ms)                |
 
 #### WebSocket Configuration
 
-| Option                       | Type    | Default | Description                       |
-| ---------------------------- | ------- | ------- | --------------------------------- |
-| `reconnect`                  | boolean | true    | Enable automatic reconnection     |
-| `maxReconnectAttempts`       | number  | 5       | Maximum reconnection attempts     |
-| `reconnectDelay`             | number  | 1000    | Initial reconnect delay (ms)      |
-| `reconnectBackoffMultiplier` | number  | 1.5     | Backoff multiplier for reconnects |
-| `pingInterval`               | number  | 30000   | WebSocket ping interval (ms)      |
-| `connectionTimeout`          | number  | 10000   | Connection timeout (ms)           |
+| Option                       | Type    | Default       | Description                       |
+| ---------------------------- | ------- | ------------- | --------------------------------- |
+| `reconnect`                  | boolean | false         | Enable automatic reconnection     |
+| `maxReconnectAttempts`       | number  | 5             | Maximum reconnection attempts     |
+| `reconnectDelay`             | number  | 1000          | Initial reconnect delay (ms)      |
+| `reconnectBackoffMultiplier` | number  | 1.5           | Backoff multiplier for reconnects |
+| `maxReconnectDelay`          | number  | 30000         | Maximum reconnect delay (ms)      |
+| `pingInterval`               | number  | 30000         | WebSocket ping interval (ms)      |
+| `pongTimeout`                | number  | 5000          | Pong response timeout (ms)        |
+| `connectionTimeout`          | number  | 10000         | Connection timeout (ms)           |
+| `binaryType`                 | string  | "arraybuffer" | Binary message type               |
 
 ## Events
 
