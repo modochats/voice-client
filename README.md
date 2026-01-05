@@ -36,9 +36,9 @@ pnpm add @modochats/voice-client
 ## Quick Start
 
 ```typescript
-import {ModoVoiceClient, EventType} from "@modochats/voice-client";
+import {VoiceClient, EventType} from "@modochats/voice-client";
 
-const client = new ModoVoiceClient({
+const client = new VoiceClient({
   apiBase: "https://live.modochats.com",
   chatbotUuid: "your-chatbot-uuid",
   userUniqueId: "user-123"
@@ -67,7 +67,7 @@ await client.connect();
 ### Connecting and Disconnecting
 
 ```typescript
-const client = new ModoVoiceClient({
+const client = new VoiceClient({
   apiBase: "https://live.modochats.com",
   chatbotUuid: "abc-123",
   userUniqueId: "user-456"
@@ -120,7 +120,7 @@ client.onAny(event => {
 ### Full Configuration Example
 
 ```typescript
-const client = new ModoVoiceClient({
+const client = new VoiceClient({
   apiBase: "https://live.modochats.com",
   chatbotUuid: "your-chatbot-uuid",
   userUniqueId: "user-123",
@@ -231,7 +231,7 @@ EventType.DEBUG;
 
 ## API Reference
 
-### ModoVoiceClient
+### VoiceClient
 
 ```
 
@@ -241,7 +241,7 @@ EventType.DEBUG;
 
 ## API Reference
 
-### ModoVoiceClient
+### VoiceClient
 
 ````
 
@@ -276,12 +276,12 @@ EventType.DEBUG;
 
 ## API Reference
 
-### ModoVoiceClient
+### VoiceClient
 
 #### Constructor
 
 ```typescript
-new ModoVoiceClient(config: ModoVoiceConfig)
+new VoiceClient(config: ModoVoiceConfig)
 ````
 
 #### Methods
@@ -344,12 +344,12 @@ Update configuration (only when disconnected).
 
 ```typescript
 import {useEffect, useState} from "react";
-import {ModoVoiceClient, EventType} from "@modochats/voice-client";
+import {VoiceClient, EventType} from "@modochats/voice-client";
 
 function VoiceChat() {
   const [client] = useState(
     () =>
-      new ModoVoiceClient({
+      new VoiceClient({
         apiBase: "https://live.modochats.com",
         chatbotUuid: "your-chatbot-uuid",
         userUniqueId: "user-123"
@@ -417,9 +417,9 @@ function VoiceChat() {
 
 <script setup lang="ts">
 import {ref, onMounted, onUnmounted} from "vue";
-import {ModoVoiceClient, EventType} from "@modochats/voice-client";
+import {VoiceClient, EventType} from "@modochats/voice-client";
 
-const client = new ModoVoiceClient({
+const client = new VoiceClient({
   apiBase: "https://live.modochats.com",
   chatbotUuid: "your-chatbot-uuid",
   userUniqueId: "user-123"
@@ -454,9 +454,9 @@ const disconnect = () => client.disconnect();
   <head>
     <title>Modo Voice Client</title>
     <script type="module">
-      import {ModoVoiceClient, EventType} from "https://unpkg.com/@modochats/voice-client";
+      import {VoiceClient, EventType} from "https://unpkg.com/@modochats/voice-client";
 
-      const client = new ModoVoiceClient({
+      const client = new VoiceClient({
         apiBase: "https://live.modochats.com",
         chatbotUuid: "your-chatbot-uuid",
         userUniqueId: "user-123"
@@ -489,7 +489,7 @@ const disconnect = () => client.disconnect();
 The SDK is written in TypeScript and provides full type definitions:
 
 ```typescript
-import {ModoVoiceClient, ModoVoiceConfig, EventType, ConnectedEvent, AudioDeviceInfo, ConnectionMetrics, LogLevel} from "@modochats/voice-client";
+import {VoiceClient, ModoVoiceConfig, EventType, ConnectedEvent, AudioDeviceInfo, ConnectionMetrics, LogLevel} from "@modochats/voice-client";
 
 const config: ModoVoiceConfig = {
   apiBase: "https://live.modochats.com",
@@ -497,7 +497,7 @@ const config: ModoVoiceConfig = {
   userUniqueId: "user-456"
 };
 
-const client = new ModoVoiceClient(config);
+const client = new VoiceClient(config);
 ```
 
 ## Browser Compatibility

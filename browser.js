@@ -1,4 +1,4 @@
-export {ModoVoiceClient} from "./src/ModoVoiceClient.ts";
+export {VoiceClient} from "./src/app.ts";
 export {EventType} from "./src/types/events.ts";
 export {LogLevel} from "./src/types/config.ts";
 export {AudioPlaybackState, RecordingState} from "./src/types/audio.ts";

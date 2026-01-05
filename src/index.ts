@@ -1,4 +1,4 @@
-export {ModoVoiceClient} from "./ModoVoiceClient";
+export {VoiceClient} from "./app";
 
 export * from "./services/shared/types/events";
 export * from "./services/audio/audio";
@@ -11,4 +11,4 @@ export {ConnectionState} from "./services/web-socket/connection-state";
 
 export {AudioInputProcessor} from "./services/audio/input-processor";
 
-export {ModoVoiceClient as default} from "./ModoVoiceClient";
+export {VoiceClient as default} from "./app";

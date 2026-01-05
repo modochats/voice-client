@@ -8,7 +8,7 @@ import {AudioDeviceInfo} from "./services/audio/audio";
 import {ConnectionMetrics} from "./services/web-socket/websocket";
 import {ConnectionState} from "./services/web-socket/connection-state";
 
-export class ModoVoiceClient {
+export class VoiceClient {
   private config: Required<ModoVoiceConfig>;
 
   private eventEmitter: EventEmitter;

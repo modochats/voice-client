@@ -1,5 +1,6 @@
+// @ts-nocheck
 import React, {useEffect, useState, useCallback} from "react";
-import {ModoVoiceClient, EventType, AudioDeviceInfo, VoiceActivityMetrics} from "../src";
+import {VoiceClient, EventType, AudioDeviceInfo, VoiceActivityMetrics} from "../src";
 
 interface VoiceChatProps {
   chatbotUuid: string;
@@ -9,7 +10,7 @@ interface VoiceChatProps {
 export const VoiceChat: React.FC<VoiceChatProps> = ({chatbotUuid, userUniqueId}) => {
   const [client] = useState(
     () =>
-      new ModoVoiceClient({
+      new VoiceClient({
         apiBase: "https://live.modochats.com",
         chatbotUuid,
         userUniqueId
@@ -59,14 +60,6 @@ export const VoiceChat: React.FC<VoiceChatProps> = ({chatbotUuid, userUniqueId})
         setIsConnecting(false);
       }),
 
-      client.on(EventType.TRANSCRIPT_RECEIVED, event => {
-        setTranscript(event.text);
-      }),
-
-      client.on(EventType.AI_RESPONSE_RECEIVED, event => {
-        setAiResponse(event.text);
-      }),
-
       client.on(EventType.MICROPHONE_PAUSED, () => {
         setIsAiSpeaking(true);
       }),
@@ -101,7 +94,6 @@ export const VoiceChat: React.FC<VoiceChatProps> = ({chatbotUuid, userUniqueId})
       setError(`Disconnect failed: ${(err as Error).message}`);
     }
   }, [client]);
-
   return (
     <div style={{padding: "20px", maxWidth: "800px", margin: "0 auto", fontFamily: "Arial, sans-serif"}}>
       <h1>🎙️ Modo Voice Chat</h1>

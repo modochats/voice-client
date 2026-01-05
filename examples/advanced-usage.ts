@@ -1,7 +1,7 @@
-import {ModoVoiceClient, EventType, LogLevel} from "../src";
+import {VoiceClient, EventType} from "../src";
 
 async function main() {
-  const client = new ModoVoiceClient({
+  const client = new VoiceClient({
     apiBase: "https://live.modochats.com",
     chatbotUuid: "your-chatbot-uuid-here",
     userUniqueId: "user-123",
