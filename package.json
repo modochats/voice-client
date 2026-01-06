@@ -1,6 +1,6 @@
 {
   "name": "@modochats/voice-client",
-  "version": "0.2.01",
+  "version": "0.2.2",
   "description": "TypeScript SDK for Modo Voice Agent - Real-time voice communication with AI",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
